@@ -56,8 +56,8 @@
 		"tokenExpiresThreshold": 864000,
 		"oauth": {
 			"weixin": {
-				"appid": "wx8db8d452fd07f57a",
-				"appsecret": "391a8fb57397fafd08cb17004587de82"
+				"appid": "微信小程序id",
+				"appsecret": "微信小程序秘钥"
 			}
 		}
 	},

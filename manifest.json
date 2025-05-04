@@ -80,7 +80,7 @@
                 },
                 "share" : {
                     "weixin" : {
-                        "appid" : "wx0ea15511fb3b2d93",
+                        "appid" : "微信小程序id",
                         "UniversalLinks" : ""
                     }
                 }
@@ -111,7 +111,7 @@
     },
     /* 小程序特有相关 */
     "mp-weixin" : {
-        "appid" : "wx8db8d452fd07f57a",
+        "appid" : "微信小程序id",
         "setting" : {
             "urlCheck" : false,
             "minified" : true,
@@ -147,7 +147,7 @@
             "subPackages" : true
         },
         "component2" : true,
-        "appid" : "2021004127670205",
+        "appid" : "支付宝小程序id",
         "unipush" : {
             "enable" : false
         },

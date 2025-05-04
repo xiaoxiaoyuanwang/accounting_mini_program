@@ -1,0 +1,1320 @@
+<template>
+	<wrapperPage>
+		<view class="container_detail">
+			<view class="summary_container">
+				<view class="summary_filter algin_c">
+					<view class="filter_container" @click="dateFilterShow">
+						<text class="date_filter">
+							{{activeYearMonth|formatData('YYYY年MM月')}}
+						</text>
+						<u-icon name="arrow-down-fill" color="#8a8a8a" size="12"></u-icon>
+					</view>
+
+					<view class="filter_container" @click="()=>{showModal('showType')}">
+						<text class="date_filter">
+							{{activeType}}
+						</text>
+						<u-icon name="arrow-down-fill" color="#8a8a8a" size="12"></u-icon>
+					</view>
+					<view v-if="hasLogin" @click="hiddenAmountPageFun">
+						<uni-icons v-if="!hiddenAmountPageFlag" type="eye" size="20"></uni-icons>
+						<uni-icons v-else type="eye-slash" size="20"></uni-icons>
+					</view>
+				</view>
+				<view class="summary_result">
+					<view class="summary_item">
+						<text>{{getAmountFormatTotal(monthTotalIn, 1)}}</text>
+						<text>收入</text>
+					</view>
+					<view class="summary_item">
+						<text>-</text>
+						<text>-</text>
+					</view>
+					<view class="summary_item">
+						<text>{{getAmountFormatTotal(monthTotalOut, 1)}}</text>
+						<text>支出</text>
+					</view>
+					<view class="summary_item">
+						<text>=</text>
+						<text>=</text>
+					</view>
+					<view class="flex_row">
+						<view class="summary_item">
+							<text>
+								{{getAmountFormatTotal(monthTotalRes)}}
+							</text>
+							<text>结余</text>
+						</view>
+						<view class="pl5 flex_justify_center">
+							<view v-if="hasLogin" @click="hiddenAmountTotalPageFun">
+								<uni-icons v-if="!hiddenAmountTotalPageFlag" type="eye" size="18"></uni-icons>
+								<uni-icons v-else type="eye-slash" size="18"></uni-icons>
+							</view>
+						</view>
+					</view>
+				</view>
+			</view>
+
+			<template v-if="listArr && listArr.length > 0">
+				<scroll-view :scroll-top="scrollTop" class="main_container" scroll-y="true" @scrolltolower="lowerFun"
+					@scroll="scrollFun">
+					<view :key="index" v-for="(item, index ) in pageListAfterDeal">
+						<uni-swipe-action :autoClose="true">
+							<view class="item_container" :class="'item_container'+item.time.slice(0,10)">
+								<view class="sticky_container">
+									<view>
+										{{item.time|formatData('YYYY-MM-DD')}}
+										{{item.time|formatWeek }}
+									</view>
+									<view class="sticky_right">
+										<view class="text_wrapper">
+											<text class="pr3">
+												出
+											</text>
+											<text>
+												{{getAmountFormat(getTotalAmont(item.time, 0), 1)}}
+											</text>
+										</view>
+										<view class="text_wrapper text_primary">
+											<text class="pr3">
+												入
+											</text>
+											<text>
+												{{getAmountFormat(getTotalAmont(item.time, 1), 1)}}
+											</text>
+										</view>
+										<!-- <view class="text_wrapper text_not">
+									<text class="pr3">
+										不
+									</text>
+									<text>
+										{{ getTotalAmont(item.time, 2)|formatAmount|changeToThousand(1) }}
+									</text>
+								</view> -->
+									</view>
+								</view>
+
+								<view class="list_container">
+									<view v-for="(itemSec,indexSec ) in item.data" :key="itemSec._id">
+										<uni-swipe-action-item :right-options="rightOptions"
+											@click="optRightSwipe($event,itemSec)" :auto-close="false">
+											<view class="list_item" @click="addAndEditFun(itemSec)">
+												<view class="img_container">
+													<!-- <image class="img_item" src="../../../static/svgs/shopping.svg"></image> -->
+													<view class="img_item">
+														<text class="iconfont colItemImg2"
+															:class="itemSec.consumption_icon_class"
+															:style="[comColor(itemSec.consumption_icon_color,'color')]"></text>
+													</view>
+													<view class="tip_img" v-if="itemSec.platform==='mp-weixin'">
+														<u-icon name="weixin-fill" color="#2aae67" size="13"></u-icon>
+													</view>
+													<view class="tip_img" v-if="itemSec.platform==='mp-alipay'">
+														<u-icon name="zhifubao" color="#226bf3" size="13"></u-icon>
+													</view>
+												</view>
+												<view class="right_container">
+													<view class="right_item left_text flex_row">
+														<text>{{itemSec.consumption_label}}</text>
+														<text v-if="itemSec.consumption_type =='收入'" class="pay_in">
+															{{getAmountFormat(itemSec.consumption_amount)}}
+														</text>
+														<text v-else-if="itemSec.consumption_type =='支出'"
+															class="pay_out">
+															{{getAmountFormat(-itemSec.consumption_amount)}}
+														</text>
+														<text v-else-if="itemSec.consumption_type =='不计'"
+															class="pay_not">
+															{{getAmountFormat(itemSec.consumption_amount, 1)}}
+														</text>
+													</view>
+
+													<view class="right_item right_text flex_row">
+														<view class="color1 remark_view">
+															<text>
+																{{itemSec.consumption_date|formatData('HH:mm')}}
+															</text>
+															<text v-if="itemSec.consumption_remark"
+																style="padding: 0 6rpx;">
+																|
+															</text>
+															<view class="remarkText" v-if="itemSec.consumption_remark">
+																<text
+																	class="overflowE">{{itemSec.consumption_remark || ''}}</text>
+															</view>
+														</view>
+														<view class="avatar_wrapper"
+															v-if="itemSec.user_id && itemSec.user_id[0]">
+															<!-- <cloudImage :src="itemSec.user_id[0].avatar_file_url" height="30rpx" width="30rpx" classImg="avatar_wrapper_img"></cloudImage> -->
+															<text class="color1 name_view">
+																{{ itemSec.user_id[0].nickname || itemSec.user_id[0].username}}
+															</text>
+														</view>
+													</view>
+												</view>
+											</view>
+										</uni-swipe-action-item>
+									</view>
+								</view>
+							</view>
+						</uni-swipe-action>
+					</view>
+					<loadAllData v-if="isAll"></loadAllData>
+				</scroll-view>
+			</template>
+			<template v-else>
+				<view v-if="countNum === null && hasLogin">
+					<u-skeleton rows='5' rowsHeight='30' :loading="true" :animate="true"></u-skeleton>
+				</view>
+				<view style="padding-top: 160rpx;" v-else>
+					<u-empty>
+					</u-empty>
+					<view class="flex_row flex_justify_between"
+						style="align-items: center;margin-top: 40rpx;padding: 0 100rpx;">
+						<view style="width: 240rpx;">
+							<u-button @click="gotoPlaying" type="primary" shape="circle" :plain="true"
+								text="使用指南"></u-button>
+						</view>
+						<view style="width: 280rpx;">
+							<u-button @click="gotoStory" type="primary" shape="circle" :plain="true"
+								text="小明和小明的故事"></u-button>
+						</view>
+					</view>
+				</view>
+			</template>
+			<view class="addTouch" initT :style="{
+				left: addButtonLeftPercent>initLMax?initLMax*100+'vw':(addButtonLeftPercent*100)+'vw',
+				top: addButtonTopPercent> initTMax?initTMax*100+'vh':(addButtonTopPercent*100)+'vh'}" @touchend="handleTouchEnd"
+				@touchstart="handleTouchStart" @touchmove.native.stop="handleTouchMove" @click="addAndEditFun()">
+				<u-button :customStyle="{boxShadow: '0 2rpx 8rpx 4rpx rgba(0, 122, 255, .3)',border: 'none'}"
+					color="#007aff" :plain="true" shape="circle" icon="edit-pen-fill" text="记一笔"></u-button>
+			</view>
+
+			<!-- 选择月份 -->
+			<uni-popup ref="showMonth" background-color="#f8f8f8" type="bottom">
+				<view class="types_wrapper_view">
+					<view class="close_btn">
+						<view class="close_icon">
+							<u-icon name="close" size="20" @click="closeModal('showMonth')"></u-icon>
+						</view>
+						<view>
+							请选择月份
+						</view>
+					</view>
+					<scroll-view class="types_btns_view" :scroll-into-view="toView" scroll-y="true"
+						scroll-with-animation="true">
+						<popupBtn popupType="selectMonth" @btnClickCb='monthChange' :listObj="monthListObj"
+							:activeType="activeMonth" :activeTypeFirst="activeYear">
+						</popupBtn>
+						<!-- <view id='id_bottom'></view> -->
+					</scroll-view>
+				</view>
+			</uni-popup>
+
+			<!-- 选择分类 -->
+			<uni-popup ref="showType" background-color="#f8f8f8" type="bottom">
+				<view class="types_wrapper_view">
+					<view class="close_btn">
+						<view class="close_icon">
+							<u-icon name="close" size="20" @click="closeModal('showType')"></u-icon>
+						</view>
+						<view>
+							请选择分类
+						</view>
+					</view>
+					<view class="types_btns_view">
+						<view class="types_btns">
+							<u-button size="large" @click="typeChange({
+							item: {
+								type: '',
+								label: '全部分类'
+							}
+						})" :type="activeType =='全部分类'?'primary':'info'" text="全部分类"></u-button>
+						</view>
+						<popupBtn popupType="selectType" @btnClickCb='typeChange' :listObj="typeListObj"
+							:activeType="activeType" :activeTypeFirst="activeTypeFirst">
+						</popupBtn>
+					</view>
+				</view>
+			</uni-popup>
+		</view>
+	</wrapperPage>
+</template>
+<script>
+	const db = uniCloud.database()
+	const db2 = uniCloud.databaseForJQL()
+	const dbcmd = db.command
+	import {
+		store,
+		mutations
+	} from '@/uni_modules/uni-id-pages/common/store.js'
+	// import cloudImage from '@/uni_modules/uni-id-pages/components/cloud-image/cloud-image.vue'
+	import popupBtn from "@/components/popupBtn/popupBtn"
+	import dayjs from 'dayjs'
+	import messageMixin from "@/common/messageMixin"
+	const formatDe = "YYYY-MM"
+	const formatDe2 = "YYYY-MM-DD"
+	const xm_consumption_pages = 'xm-consumption-pages'
+	const uni_id_users = 'uni-id-users'
+	const xm_consumption_types = 'xm-consumption-types'
+	// const xm_consumption_report_remind = 'xm-consumption-report-remind'
+	const systemInfo = uni.getSystemInfoSync()
+
+	let storageButtonKeyPercent = 'storageButtonKeyPercent'
+	export default {
+		components: {
+			popupBtn
+		},
+		mixins: [messageMixin],
+		data() {
+			// let tValMax = ((systemInfo.windowHeight - 50) / systemInfo.windowHeight)
+			// let lValMax = ((systemInfo.windowWidth - 86) / systemInfo.windowWidth)
+			let tValInit = ((systemInfo.windowHeight - 50) / systemInfo.windowHeight)
+			let lValInit = (((systemInfo.windowWidth - 86) / 2) / systemInfo.windowWidth)
+			return {
+				systemInfo,
+				// // 最大量
+				// tValMax,
+				// lValMax,
+				// 初始化量
+				// initT: tValInit,
+				// initL: lValInit,
+				// 新增按钮滑动位置-过程量
+				addButtonTop: (systemInfo.windowHeight - 50),
+				addButtonLeft: (systemInfo.windowWidth - 86) / 2,
+				// 保存百分比
+				addButtonTopPercent: tValInit,
+				addButtonLeftPercent: lValInit,
+				// showReport: false,
+				// reportDataObj: {},
+				toView: '',
+				rightOptions: [{
+						text: '编辑',
+						style: {
+							backgroundColor: '#007aff'
+						}
+					},
+					{
+						text: '删除',
+						style: {
+							backgroundColor: '#F56C6C'
+						}
+					}
+				],
+				loading: false,
+				// 选择月-filter
+				activeYearMonth: '',
+				// 选择月-filter
+				activeYearMonthPage: '',
+				// 分类-filter
+				activeType: '全部分类',
+				// 一级分类-filter
+				activeTypeFirst: '',
+				// 日期数据-fliter
+				monthListObj: {},
+				// 日期数据-打开选中月-fliter
+				activeMonth: '',
+				// 日期数据-打开选中年-fliter
+				activeYear: '',
+				pageListAfterDeal: [],
+				listArr: [],
+				// 日期数组-data
+				timeList: [],
+				// 每个日期高度数组
+				heightList: [],
+				// 分类数据 -filter
+				typeListObj: {},
+				// 当前月总收入-第一行
+				monthTotalIn: 0,
+				// 当前月总支出-第一行
+				monthTotalOut: 0,
+				scrollTop: 0,
+				old: {
+					scrollTop: 0
+				},
+				// 一次加载20条
+				limitNum: 20,
+				// 总数
+				countNum: null,
+				// 每一日总数数组
+				monthTotalSumList: [],
+				commonInfo: {
+					result: {
+						share_img: ''
+					}
+				}
+			}
+		},
+
+		created() {
+			uniCloud.callFunction({
+				name: 'getCommonInfo',
+				data: {}
+			}).then(com => {
+				this.commonInfo = com
+			});
+			// 设置按钮位置
+			let storageButtonObj = uni.getStorageSync(storageButtonKeyPercent) || {}
+			this.addButtonLeftPercent = storageButtonObj.addButtonLeftPercent || this.initL
+			this.addButtonTopPercent = storageButtonObj.addButtonTopPercent || this.initT
+
+			this.activeYearMonth = dayjs().format(formatDe)
+			this.activeYearMonthPage = dayjs().format(formatDe)
+			this.monthTotalIn = 0
+			this.monthTotalOut = 0
+			const y = dayjs().format("YYYY")
+			for (var i = y; i >= 2022; i--) {
+				if (!this.monthListObj[i + '年']) {
+					let monthArr = []
+					for (var j = 0; j < 12; j++) {
+						monthArr.push({
+							type: i,
+							label: (j + 1) + '月',
+							value: j + 1
+						})
+					}
+					this.monthListObj[i + '年'] = monthArr
+				}
+			}
+		},
+		onLoad() {
+			this.initData()
+			this.getTemplateFun()
+		},
+		onShow() {
+			this.closeModal('showMonth')
+			this.closeModal('showType')
+			if (!this.hasLogin) {
+				mutations.setTypeListStore([])
+				return
+			}
+			if (this.typeListStore && this.typeListStore.length > 0) {
+				let typeData = this.typeListStore
+				this.initTypesData(typeData)
+			}
+		},
+		computed: {
+			initTMax() {
+				return ((this.getSystemInfoFun().windowHeight - 50) / this.getSystemInfoFun().windowHeight)
+			},
+			initLMax() {
+				return ((this.getSystemInfoFun().windowWidth - 86) / this.getSystemInfoFun().windowWidth)
+			},
+			initT() {
+				return ((this.getSystemInfoFun().windowHeight - 50) / this.getSystemInfoFun().windowHeight)
+			},
+			initL() {
+				return (((this.getSystemInfoFun().windowWidth - 86) / 2) / this.getSystemInfoFun().windowWidth)
+			},
+			comColor() {
+				return (valObj, key) => {
+					if (valObj) {
+						let c = `rgba(${valObj.r},${valObj.g},${valObj.b},${valObj.a})`
+						return {
+							[key]: c
+						}
+					} else {
+						return {}
+					}
+				}
+			},
+			isAll() {
+				return this.countNum !== null && this.listArr.length >= this.countNum
+			},
+			typeListStore() {
+				return store.typeListStore
+			},
+			monthTotalRes() {
+				let res = this.monthTotalIn - this.monthTotalOut
+				return res.toFixed(2)
+			},
+			hasLogin() {
+				return store.hasLogin
+			},
+			userInfo() {
+				return store.userInfo
+			},
+			hiddenAmountPageFlag() {
+				return store.hiddenAmountPageFlag
+			},
+			hiddenAmountTotalPageFlag() {
+				return store.hiddenAmountTotalPageFlag
+			},
+			// 笔数
+			getAmountNumFormat() {
+				return (num) => {
+					if (this.hiddenAmountTotalPageFlag) {
+						return '***'
+					} else {
+						return num
+					}
+				}
+			},
+			// 金额格式化-总数-最上一行
+			getAmountFormatTotal() {
+				return (num, type) => {
+					if (this.hiddenAmountTotalPageFlag) {
+						return '*****'
+					} else {
+						let formatAmount = this.$options.filters['formatAmount']
+						let changeToThousand = this.$options.filters['changeToThousand']
+						if (type) {
+							return changeToThousand(formatAmount(num), type)
+						} else {
+							return changeToThousand(formatAmount(num))
+						}
+					}
+				}
+			},
+			// 金额格式化-明细
+			getAmountFormat() {
+				return (num, type) => {
+					if (this.hiddenAmountPageFlag) {
+						return '*****'
+					} else {
+						let formatAmount = this.$options.filters['formatAmount']
+						let changeToThousand = this.$options.filters['changeToThousand']
+						if (type) {
+							return changeToThousand(formatAmount(num), type)
+						} else {
+							return changeToThousand(formatAmount(num))
+						}
+					}
+				}
+			},
+			// 每一日的总数
+			getTotalAmont() {
+				return (de, type) => {
+					let res = []
+					if (type === 1) {
+						res = this.monthTotalSumList.filter(filterItem => {
+							return filterItem.consumption_type == '收入' && de.slice(0, 10) === filterItem.time
+						})
+					} else if (type === 0) {
+						res = this.monthTotalSumList.filter(filterItem => {
+							return filterItem.consumption_type == '支出' && de.slice(0, 10) === filterItem.time
+						})
+					} else {
+						res = this.monthTotalSumList.filter(filterItem => {
+							return filterItem.consumption_type == '不计' && de.slice(0, 10) === filterItem.time
+						})
+					}
+					let total = 0
+					if (res && res.length > 0) {
+						total = res[res.length - 1].total_amount
+					}
+					return total
+				}
+			},
+			getReportTotalAmont() {
+				return (list) => {
+					let total = 0
+					let len = 0
+					if (list && list.length > 0) {
+						list.forEach(item => {
+							len += item.countNum || 0
+							total += (item.total_amount || 0)
+						})
+					}
+					return {
+						total,
+						len
+					}
+				}
+			}
+		},
+		watch: {
+			addButtonTop: {
+				handler(newVal, oldVal) {
+					this.setThresholdValue()
+				}
+			},
+			addButtonLeft: {
+				handler(newVal, oldVal) {
+					this.setThresholdValue()
+				}
+			},
+			activeYearMonth: {
+				handler(newVal, oldVal) {
+					if (newVal !== oldVal) {
+						this.activeYear = newVal.slice(0, 4)
+						this.activeMonth = (newVal.slice(5, 7) * 1) + '月'
+						this.computedMonthTotal()
+					}
+				},
+				immediate: true
+			},
+		},
+		onPullDownRefresh() {
+			if (!this.hasLogin) {
+				uni.stopPullDownRefresh()
+				return
+			}
+			this.initData()
+		},
+		mounted() {
+			uni.$on('updatePageList', (obj) => {
+				if (obj.type === 'update') {
+					this.updateListAndTotal()
+					// this.$nextTick(()=>{
+					// 	for (let i = 0; i < this.listArr.length; i++) {
+					// 		let item = this.listArr[i]
+					// 		if (item._id === obj.data._id) {
+					// 			this.$set(this.listArr, i, obj.data)
+					// 			break
+					// 		}
+					// 	}
+					// 	this.computedMonthTotal()
+					// })
+				} else {
+					this.updateListAndTotal()
+				}
+			})
+			// uni.$on('updateTypeList', () => {
+			// 	this.getTypes()
+			// })
+		},
+		methods: {
+			getSystemInfoFun() {
+				return uni.getSystemInfoSync()
+			},
+			// 移动按钮-开始
+			handleTouchMove(event) {
+				const moveX = event.touches[0].pageX
+				const moveY = event.touches[0].pageY
+				this.addButtonTop += moveY - (this.startY || 0)
+				this.addButtonLeft += moveX - (this.startX || 0)
+				this.startX = moveX
+				this.startY = moveY
+			},
+			handleTouchStart(event) {
+
+				this.startX = event.touches[0].pageX
+				this.startY = event.touches[0].pageY
+				let query = uni.createSelectorQuery()
+				if (query.select(`.addTouch`)) {
+					query.select(`.addTouch`).boundingClientRect(rect => {
+						if (rect) {
+							this.addButtonLeft = rect.left
+							this.addButtonTop = rect.top
+						}
+					}).exec()
+				}
+			},
+			handleTouchEnd() {
+				this.setThresholdValue()
+			},
+			setThresholdValue() {
+				if (this.addButtonTop > this.getSystemInfoFun().windowHeight - 50) {
+					this.addButtonTop = this.getSystemInfoFun().windowHeight - 50
+				}
+				if (this.addButtonTop < 0) {
+					this.addButtonTop = 0
+				}
+
+				if (this.addButtonLeft > this.getSystemInfoFun().windowWidth - 86) {
+					this.addButtonLeft = this.getSystemInfoFun().windowWidth - 86
+				}
+				if (this.addButtonLeft < 0) {
+					this.addButtonLeft = 0
+				}
+				this.addButtonTopPercent = this.addButtonTop / this.getSystemInfoFun().windowHeight
+				this.addButtonLeftPercent = this.addButtonLeft / this.getSystemInfoFun().windowWidth
+				uni.setStorageSync(storageButtonKeyPercent, {
+					addButtonLeftPercent: this.addButtonLeftPercent,
+					addButtonTopPercent: this.addButtonTopPercent
+				})
+			},
+			// 移动按钮-结束
+			hiddenAmountPageFun() {
+				mutations.setHiddenAmountPageFlagStore(!this.hiddenAmountPageFlag)
+			},
+			hiddenAmountTotalPageFun() {
+				mutations.setHiddenAmountTotalPageFlagStore(!this.hiddenAmountTotalPageFlag)
+			},
+			// filter 月 弹窗打开
+			dateFilterShow() {
+				this.showModal('showMonth')
+				// this.$nextTick(() => {
+				// 	this.toView = 'id_bottom'
+				// })
+			},
+			// filter 月
+			monthChange({
+				item
+			} = obj) {
+				let m = item.value < 10 ? '0' + item.value : item.value
+				this.activeYearMonth = `${item.type}-${m}`
+				this.activeYearMonthPage = `${item.type}-${m}`
+				this.listArr = []
+				this.heightList = []
+				this.timeList = []
+				this.closeModal('showMonth')
+				this.updateListAndTotal()
+			},
+			typeChange({
+				item
+			} = obj) {
+				this.activeYearMonth = this.activeYearMonthPage
+				this.activeTypeFirst = item.type
+				this.activeType = item.label
+				this.listArr = []
+				this.heightList = []
+				this.timeList = []
+				this.closeModal('showType')
+				this.updateListAndTotal()
+			},
+			initData() {
+				this.monthTotalSumList = []
+				this.listArr = []
+				this.pageListAfterDeal = []
+				this.getTypes()
+				this.updateListAndTotal()
+			},
+			updateListAndTotal() {
+				this.getPages(0)
+				this.computedMonthTotal()
+			},
+			// 左滑操作-点击
+			optRightSwipe(e, item) {
+				if (e.content.text == '删除') {
+					uni.showModal({
+						title: '删除',
+						content: '确定要删除该条数据吗？',
+						success: (res) => {
+							if (res.confirm) {
+								uni.showLoading({
+									title: '删除中'
+								})
+								db.collection(xm_consumption_pages).doc(item._id).remove().then(() => {
+									this.updateListAndTotal()
+								}).catch(err => {
+									uni.showModal({
+										title: '删除失败',
+										icon: 'error',
+										content: JSON.stringify(err),
+										showCancel: false
+									});
+								}).finally(() => {
+									uni.hideLoading()
+								})
+							} else if (res.cancel) {}
+						}
+					});
+				} else {
+					this.addAndEditFun(item)
+				}
+			},
+			// 获取分类
+			getTypes() {
+				if (!this.hasLogin) {
+					return
+				}
+				db2.collection(xm_consumption_types).where({
+					user_id: db.getCloudEnv('$cloudEnv_uid')
+				}).orderBy('order asc').limit(100).get().then(res => {
+					let typeData = res.data
+					mutations.setTypeListStore(typeData)
+					this.initTypesData(typeData)
+				})
+			},
+			// filter type
+			// 处理type格式
+			initTypesData(typeData) {
+				let typeObj = {
+					"支出": [],
+					"收入": [],
+					"不计": []
+				}
+				// 存在order的数据
+				let typeObj1 = {
+					"支出": [],
+					"收入": [],
+					"不计": []
+				}
+				// 不存在order的数据
+				let typeObj2 = {
+					"支出": [],
+					"收入": [],
+					"不计": []
+				}
+				typeData.forEach(item => {
+					if (item.order === undefined || item.order === '') {
+						if (!typeObj2[item.type]) {
+							typeObj2[item.type] = []
+						}
+						typeObj2[item.type].push(item)
+					} else {
+						if (!typeObj1[item.type]) {
+							typeObj1[item.type] = []
+						}
+						typeObj1[item.type].push(item)
+					}
+				})
+				typeObj["支出"] = [...typeObj2["支出"], ...typeObj1["支出"]]
+				typeObj["收入"] = [...typeObj2["收入"], ...typeObj1["收入"]]
+				typeObj["不计"] = [...typeObj2["不计"], ...typeObj1["不计"]]
+				this.typeListObj = typeObj
+			},
+			// 获取数据
+			getPages(n) {
+				if (!this.hasLogin) {
+					this.countNum = 0
+					return
+				}
+				if (!this.activeYearMonth || !this.hasLogin) {
+					this.listArr = []
+					return
+				}
+				this.getDataFlag = true
+				let skipLen = this.listArr.length
+				if (n === 0) {
+					// this.listArr = []
+					skipLen = 0
+					this.countNum = null
+				}
+				if (this.countNum !== null && this.listArr.length >= this.countNum) {
+					return
+				}
+				let types = this.activeType == "全部分类" ? '' : this.activeType
+				let str = "user_id==$cloudEnv_uid"
+				if (this.activeTypeFirst) {
+					str = str + "&&consumption_type=='" + this.activeTypeFirst + "'"
+				}
+				if (types) {
+					str = str + "&&consumption_label=='" + types + "'"
+				}
+				if (this.activeYearMonthPage) {
+					// 获取当前时间对象
+					const currentDate = dayjs(this.activeYearMonthPage);
+					const lastDayOfCurrentMonth = currentDate.endOf('month').format("DD");
+					str = str +
+						`&&substr(consumption_date, 0, 10)<=${JSON.stringify(this.activeYearMonthPage+'-'+ lastDayOfCurrentMonth)}`
+				}
+				uni.showLoading({
+					title: '加载中'
+				})
+				let pageTemp = db.collection(xm_consumption_pages).where(str).orderBy(
+					'consumption_date desc').skip(skipLen).limit(this.limitNum).getTemp()
+				let userTemp = db.collection(uni_id_users).field(
+						"_id,username,avatar_file.url as avatar_file_url,nickname")
+					.getTemp()
+				db.collection(pageTemp, userTemp)
+					.get({
+						getCount: true
+					}).then(res => {
+						let data = res.result.data
+						if (n === 0) {
+							this.scrollTop = this.old.scrollTop
+							this.$nextTick(() => {
+								this.scrollTop = 0
+								this.monthTotalSumList = []
+								if (data && data.length > 0) {
+									this.activeYearMonth = dayjs(data[0].consumption_date).format(formatDe)
+								} else {
+									this.activeYearMonth = dayjs().format(formatDe)
+								}
+							});
+						}
+						this.countNum = res.result.count
+						this.$nextTick(() => {
+							let timeList = data.map(item => item.consumption_date.slice(0, 10))
+							this.getDataByMonthTotal(timeList)
+						});
+						let allData = []
+						if (n === 0) {
+							// // if (data && data.length > 0) {
+							// // 	this.activeYearMonth = dayjs(data[0].consumption_date).format(formatDe)
+							// // } else {
+							// // 	this.activeYearMonth = dayjs().format(formatDe)
+							// // }
+							// this.listArr = []
+							allData = data
+						} else {
+							allData = this.listArr.concat(data)
+						}
+						let obj = {}
+						let objLs = []
+						allData.forEach(item => {
+							let tm = this.$options.filters['formatData'](item.consumption_date, formatDe2)
+							if (!obj[tm]) {
+								objLs.push({
+									time: tm,
+									data: []
+								})
+								obj[tm] = []
+							}
+							for (let iObj = 0; iObj < objLs.length; iObj++) {
+								if (objLs[iObj].time === tm) {
+									objLs[iObj].data.push(item)
+								}
+							}
+							obj[tm].push(item)
+						})
+						this.listArr = allData
+						this.pageListAfterDeal = objLs
+						this.$nextTick(() => {
+							this.initHeight()
+						})
+					})
+					.catch((err) => {
+						this.activeYearMonth = dayjs().format(formatDe)
+					})
+					.finally(() => {
+						uni.stopPullDownRefresh()
+						uni.hideLoading()
+						this.getDataFlag = false
+					})
+			},
+			// 使用指南
+			gotoPlaying() {
+				uni.navigateTo({
+					url: '/secpackage/my/playingmethod/playingmethod'
+				});
+			},
+			// 查看故事
+			gotoStory() {
+				uni.navigateTo({
+					url: '/secpackage/my/xiaomingstory/xiaomingstory'
+				});
+			},
+			initMessageSetting() {
+				uni.getSetting({
+					withSubscriptions: true,
+					success: (res) => {
+						console.log('用户已授权日报消息推送add', res.subscriptionsSetting)
+						if (res.subscriptionsSetting && res.subscriptionsSetting.mainSwitch) {
+							let itemSettings = res.subscriptionsSetting.itemSettings
+							if (itemSettings) {
+								this.getMessageTimes(() => {
+									let useUid = uni.getStorageSync("useUid")
+									if (!useUid) {
+										return
+									}
+									let params = {}
+									// #ifdef MP-WEIXIN
+									if (itemSettings[this.templateObj.wxMonthTemplate] === 'accept') {
+										if (this.messageTimesObj && this.messageTimesObj
+											.wxMonthTimes >= this
+											.timesMonth) {} else {
+											params.wxMonthTimes = (this.messageTimesObj.wxMonthTimes ||
+												0) + 1
+										}
+									}
+									if (itemSettings[this.templateObj.wxYearTemplate] === 'accept') {
+										if (this.messageTimesObj && this.messageTimesObj.wxYearTimes >=
+											this
+											.timesYear) {} else {
+											params.wxYearTimes = (this.messageTimesObj.wxYearTimes ||
+												0) + 1
+										}
+									}
+
+									if (itemSettings[this.templateObj.wxMonthTemplate] === 'accept') {
+										// 小程序订阅消息模板id
+										this.requestSubscribeMessageFun(2, params)
+									}
+									if (itemSettings[this.templateObj.wxYearTemplate] === 'accept') {
+										// 小程序订阅消息模板id
+										this.requestSubscribeMessageFun(3, params)
+									}
+
+									// #endif
+
+									// #ifdef MP-ALIPAY
+									if (itemSettings[this.templateObj.aliMonthTemplate] === 'accept') {
+										if (this.messageTimesObj && this.messageTimesObj
+											.aliMonthTimes >= this
+											.timesMonth) {} else {
+											params.aliMonthTimes = (this.messageTimesObj
+												.aliMonthTimes || 0) + 1
+										}
+									}
+
+									if (itemSettings[this.templateObj.aliMonthTemplate] === 'accept') {
+										// 小程序订阅消息模板id
+										this.requestSubscribeMessageFun(2, params)
+									}
+									// #endif
+								})
+
+							}
+						} else {
+							// 用户未授权消息推送
+							console.log('用户未授权消息推送')
+						}
+					},
+					fail(err) {
+						console.log('获取用户设置失败', err);
+					}
+				})
+			},
+			// 新增、修改
+			addAndEditFun(item) {
+				this.initMessageSetting()
+				let url = '/secpackage/bookkeeping/addAndEdit/addAndEdit'
+				if (item) {
+					url = '/secpackage/bookkeeping/addAndEdit/addAndEdit?items=' + JSON.stringify(item)
+				}
+				uni.navigateTo({
+					url: url
+				});
+			},
+			// 滑动到底部
+			lowerFun() {
+				if (!this.getDataFlag) {
+					this.getPages()
+				}
+			},
+			initHeight() {
+				for (let i = 0; i < this.pageListAfterDeal.length; i++) {
+					let element = this.pageListAfterDeal[i]
+					this.heightList = []
+					this.timeList = []
+					let t = element.time.slice(0, 10)
+					// let topH = 0
+					// const systemInfo = uni.getSystemInfoSync()
+					let query = uni.createSelectorQuery()
+					if (query.select(`.item_container${t}`)) {
+						// query.select(`.summary_container`).boundingClientRect(rect => {
+						// 	if (rect && rect.height) {
+						// 		topH = rect.height
+						// 	}
+						// }).exec()
+						// let he = systemInfo.windowHeight - topH
+						query.select(`.item_container${t}`).boundingClientRect(rect => {
+							if (rect && rect.height) {
+								let recTop = Math.abs(rect.height)
+								this.heightList.push(recTop + 10)
+								this.timeList.push(t)
+							}
+						}).exec()
+					}
+				}
+			},
+
+			scrollFun(e) {
+				this.old.scrollTop = e.detail.scrollTop
+				let scTop = e.target.scrollTop
+				let scElH = 0
+				for (var i = 0; i < this.heightList.length; i++) {
+					// if (i == 0) {
+					// 	scElH = 0
+					// }
+					const h = this.heightList[i]
+					let current = this.timeList[i].slice(0, 7)
+					// console.log(scTop, scElH, this.heightList, current, this.activeYearMonth);
+					if (scTop >= scElH && this.activeYearMonth != current) {
+						this.activeYearMonth = current
+					}
+					scElH += h
+				}
+			},
+			// 计算每天总数
+			getDataByMonthTotal(timeList) {
+				let types = this.activeType == "全部分类" ? '' : this.activeType
+				let str = "user_id==$cloudEnv_uid"
+				if (this.activeTypeFirst) {
+					str = str + "&&consumption_type=='" + this.activeTypeFirst + "'"
+				}
+				if (types) {
+					str = str + "&&consumption_label=='" + types + "'"
+				}
+				str = `${str}&&substr(consumption_date, 0, 10)  in ${JSON.stringify(timeList)}`
+				db.collection(xm_consumption_pages).where(
+						str)
+					.field(
+						'consumption_label, consumption_type,consumption_amount, substr(consumption_date, 0, 10)  as time')
+					.groupBy('time, consumption_type').groupField('sum(consumption_amount) as total_amount')
+					.orderBy(
+						'time desc')
+					.get().then(res => {
+						this.monthTotalSumList = this.monthTotalSumList.concat(res.result.data)
+					})
+			},
+			// 计算每月总数
+			computedMonthTotal() {
+				if (!this.hasLogin) {
+					return
+				}
+				if (!this.activeYearMonth || !this.hasLogin) {
+					this.monthTotalIn = 0
+					this.monthTotalOut = 0
+					return
+				}
+				let types = this.activeType == "全部分类" ? '' : this.activeType
+				let str = "user_id==$cloudEnv_uid"
+				if (this.activeTypeFirst) {
+					str = str + "&&consumption_type=='" + this.activeTypeFirst + "'"
+				}
+				if (types) {
+					str = str + "&&consumption_label=='" + types + "'"
+				}
+				if (this.activeYearMonth) {
+					str = str + "&&/" + this.activeYearMonth + "/.test(consumption_date)"
+				}
+				db.collection(xm_consumption_pages).where(
+						str)
+					.field(
+						'consumption_label, consumption_type,consumption_amount, substr(consumption_date, 0, 7) as time')
+					.groupBy('time, consumption_type').groupField('sum(consumption_amount) as total_amount')
+					.get().then(res => {
+						let items = res.result.data
+						this.monthTotalIn = this.computedTotal(items, 1)
+						this.monthTotalOut = Math.abs(this.computedTotal(items, 0))
+					})
+			},
+			computedTotal(item, type) {
+				let res = []
+				if (type === 1) {
+					res = item.filter(filterItem => {
+						return filterItem.consumption_type == '收入'
+					})
+				} else if (type === 0) {
+					res = item.filter(filterItem => {
+						return filterItem.consumption_type == '支出'
+					})
+				} else {
+					res = item.filter(filterItem => {
+						return filterItem.consumption_type == '不计'
+					})
+				}
+				let total = 0
+				res.forEach(forItem => {
+					total += forItem.total_amount || 0
+				})
+				return total
+			},
+			// 打开弹框
+			showModal(typePopup) {
+				this.$refs[typePopup] && this.$refs[typePopup].open()
+			},
+			// 关闭弹窗
+			closeModal(typePopup) {
+				this.$refs[typePopup] && this.$refs[typePopup].close()
+			},
+		},
+		onReady() {
+			// 微信小程序需要用此写法
+			// this.$refs.datetimePicker.setFormatter(this.formatter)
+		},
+		// 分享好友
+		onShareAppMessage() {
+			return {
+				// title: '欢迎体验小明记账簿',
+				title: this.commonInfo.result.share_text,
+				imageUrl: this.commonInfo.result.share_img,
+				path: '/pages/detail/detail'
+			}
+		},
+		// 分享朋友圈
+		onShareTimeline() {
+			return {
+				title: this.commonInfo.result.share_text,
+				imageUrl: this.commonInfo.result.share_img,
+				path: '/pages/detail/detail',
+				query: ''
+			}
+		},
+	}
+</script>
+<style lang="scss">
+	.container_detail {
+		.summary_container {
+			background: linear-gradient(to bottom, #007AFF, rgba(2, 122, 255, 0.2));
+			margin-bottom: 20rpx;
+		}
+
+		.filter_container {
+			flex-direction: row;
+			align-items: center;
+		}
+
+		.filter_container:not(:last-child) {
+			margin-right: 20rpx;
+		}
+
+		.date_filter {
+			margin-right: 10rpx;
+		}
+
+		.summary_filter {
+			flex-direction: row;
+			padding: 20rpx;
+		}
+
+		.summary_result {
+			flex: 1;
+			align-items: flex-end;
+			flex-direction: row;
+			justify-content: space-between;
+			padding: 0 20rpx 20rpx;
+		}
+
+		.summary_item {
+			padding: 0 4rpx;
+			align-items: center;
+		}
+
+		.month {
+			position: absolute;
+			font-size: 40rpx;
+			top: -20rpx;
+			left: 20rpx;
+			font-style: italic;
+		}
+
+		.main_container {
+			height: calc(100vh - 190rpx);
+		}
+
+		.item_container {
+			// padding: 20rpx;
+			margin: 0 20rpx 20rpx;
+			// border-radius: 16rpx;
+			border-radius: 0 0 16rpx 16rpx;
+			box-sizing: border-box;
+			background: #fff;
+		}
+
+		.list_container {
+			padding: 10rpx 20rpx 20rpx 20rpx;
+
+			.list_item {
+				flex-direction: row;
+				border-bottom: 2rpx solid #ddd;
+				padding: 20rpx;
+			}
+
+			.img_container {
+				position: relative;
+			}
+
+			.img_item {
+				margin-top: 20rpx;
+				height: 64rpx;
+				width: 64rpx;
+				border-radius: 50%;
+			}
+
+			.tip_img {
+				position: absolute;
+				top: -4rpx;
+				left: 0rpx;
+			}
+
+			.right_container {
+				flex: 1;
+				// flex-direction: row;
+				justify-content: space-between;
+				padding-left: 16rpx;
+			}
+
+			.right_item {
+				justify-content: space-between;
+			}
+
+			.left_text {
+				align-items: flex-start;
+			}
+
+			.right_text {
+				align-items: flex-end;
+			}
+
+			.remark_view {
+				flex-direction: row;
+				align-items: center;
+			}
+		}
+
+		.sticky_container {
+			z-index: 1;
+			position: sticky;
+			top: 0%;
+			left: 0%;
+			background: #ecf9ff;
+			padding: 36rpx 20rpx;
+			flex-direction: row;
+			justify-content: space-between;
+			align-items: center;
+			// border-radius: 16rpx 16rpx 0 0;
+		}
+
+		.sticky_right {
+			flex-direction: row;
+			align-items: center;
+		}
+
+		.text_wrapper {
+			border-radius: 10rpx;
+			height: 36rpx;
+			line-height: 36rpx;
+			border: 2rpx solid #fa9d3b;
+			color: #fa9d3b;
+			padding: 0 10rpx;
+			box-sizing: content-box;
+			flex-direction: row;
+		}
+
+		.text_primary {
+			border: 2rpx solid #007aff;
+			color: #007aff;
+		}
+
+		.text_not {
+			border: 2rpx solid #666;
+			color: #666;
+		}
+
+		.text_wrapper:not(:last-child) {
+			margin-right: 10rpx;
+		}
+
+		.avatar_wrapper {
+			flex-direction: row;
+			align-items: center;
+		}
+
+		.avatar_wrapper_img {
+			height: 30rpx;
+			width: 30rpx;
+			border-radius: 50%;
+		}
+
+		.img_tip_item {
+			height: 20rpx;
+			width: 20rpx;
+			border-radius: 50%;
+		}
+
+		.name_view {
+			margin-left: 10rpx;
+			width: 100rpx;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			text-align: right;
+		}
+
+		.types_btns_wrapper {
+			padding-bottom: 20rpx;
+			flex-direction: row;
+			// justify-content: space-between;
+			flex-wrap: wrap;
+		}
+
+		.types_btns {
+			width: 30%;
+			margin: 0 1.66% 20rpx;
+		}
+
+		.report_content {
+			width: 100%;
+		}
+
+		.report_title {
+			width: 160rpx;
+		}
+	}
+</style>

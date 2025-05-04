@@ -1,0 +1,82 @@
+<template>
+	<wrapperPage>
+		<view class="problem_wrapper">
+			<view v-if="imgList.length>0" style="flex-wrap: wrap;" class="flex_row">
+				<view class="title_img_view" :key="indexImg" v-for="(itemImg, indexImg) in imgList">
+					<u--image :showLoading="true" radius="10rpx" :src="itemImg.url" :width="itemImg.imgStyle.width"
+						:height="itemImg.imgStyle.height">
+						<template v-slot:loading>
+							<u-loading-icon color="#999"></u-loading-icon>
+						</template>
+					</u--image>
+				</view>
+			</view>
+		</view>
+	</wrapperPage>
+</template>
+<script>
+	const db = uniCloud.database()
+	const xm_consumption_problems = "xm-consumption-problems"
+	export default {
+		data() {
+			return {
+				imgList: [{
+						"imgStyle": {
+							"width": "618rpx",
+							"height": "560rpx"
+						},
+						"url": "https://env-00jxgf6z60g2.normal.cloudstatic.cn/problem/problem_3.jpg"
+					},
+					{
+						"imgStyle": {
+							"width": "288rpx",
+							"height": "594rpx"
+						},
+						"url": "https://env-00jxgf6z60g2.normal.cloudstatic.cn/problem/problem_1.jpg"
+					},
+					{
+						"imgStyle": {
+							"width": "288rpx",
+							"height": "594rpx"
+						},
+						"url": "https://env-00jxgf6z60g2.normal.cloudstatic.cn/problem/problem_1.jpg"
+					},
+					{
+						"imgStyle": {
+							"width": "288rpx",
+							"height": "594rpx"
+						},
+						"url": "https://env-00jxgf6z60g2.normal.cloudstatic.cn/problem/problem_1.jpg"
+					},
+				],
+			}
+		},
+		onLoad() {
+			db.collection(xm_consumption_problems)
+				.get().then(res => {
+					this.problemList = res.result.data
+				})
+		}
+	}
+</script>
+
+<style lang="scss">
+	.problem_wrapper {
+		padding: 80rpx 40rpx 100rpx;
+		line-height: 1.6;
+
+		.title_view {
+			padding: 30rpx 0;
+			font-size: 36rpx;
+			font-weight: bolder;
+		}
+
+		.title_content_view {
+			padding-bottom: 30rpx;
+		}
+
+		.title_img_view {
+			padding-bottom: 30rpx;
+		}
+	}
+</style>

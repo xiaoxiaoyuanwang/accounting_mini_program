@@ -1,0 +1,161 @@
+<template>
+	<view class="report_charts_container">
+		<!-- <view class="filter_top">
+			<view class="filter_box">
+				<view class="filter_container" @click="dateFilterShow">
+					<text class="filter_date">
+						{{activeYearMonthType}}
+					</text>
+					<u-icon name="arrow-down-fill" color="#fff" size="12"></u-icon>
+				</view>
+			</view>
+		</view> -->
+
+		<view class="report_contain_wrapper" scroll-y="true">
+			<reportsYear :active_year_month_props="activeYearMonth" ref="reportsYear"
+				v-if="activeYearMonthType === '按年'">
+				<view slot="filter" class="filter_container" @click="dateFilterShow">
+					<text class="filter_date">
+						{{activeYearMonthType}}
+					</text>
+					<u-icon name="arrow-down-fill" color="#fff" size="12"></u-icon>
+				</view>
+				<view v-if="hasLogin" slot="filterRight" @click="hiddenAmountReportFun">
+					<uni-icons v-if="!hiddenAmountReportFlag" color="#fff" type="eye" size="20"></uni-icons>
+					<uni-icons v-else color="#fff" type="eye-slash" size="20"></uni-icons>
+				</view>
+			</reportsYear>
+			<reportsMonth :active_year_month_props="activeYearMonth" ref="reportsMonth" v-else>
+				<view slot="filter" class="filter_container" @click="dateFilterShow">
+					<text class="filter_date">
+						{{activeYearMonthType}}
+					</text>
+					<u-icon name="arrow-down-fill" color="#fff" size="12"></u-icon>
+				</view>
+				<view v-if="hasLogin" slot="filterRight" @click="hiddenAmountReportFun">
+					<uni-icons v-if="!hiddenAmountReportFlag" color="#fff" type="eye" size="20"></uni-icons>
+					<uni-icons v-else color="#fff" type="eye-slash" size="20"></uni-icons>
+				</view>
+			</reportsMonth>
+		</view>
+
+		<uni-popup ref="showMonthAndYear" background-color="#f8f8f8" type="bottom">
+			<view class="types_edit_view">
+				<view class="edit_del" :style="{color:activeYearMonthType === '按月'?'#007AFF':'#000'}"
+					@click="selectMonthAndYear('按月')">
+					按月
+				</view>
+				<view class="edit_edit" :style="{color:activeYearMonthType === '按年'?'#007AFF':'#000'}"
+					@click="selectMonthAndYear('按年')">
+					按年
+				</view>
+				<view @click="closeModal('showMonthAndYear')" class="edit_close">
+					取消
+				</view>
+			</view>
+		</uni-popup>
+	</view>
+</template>
+
+<script>
+	import {
+		store,
+		mutations
+	} from '@/uni_modules/uni-id-pages/common/store.js'
+	import reportsYear from "@/pages/components/reports/reportsYear"
+	import reportsMonth from "@/pages/components/reports/reportsMonth"
+	export default {
+		components: {
+			reportsYear,
+			reportsMonth
+		},
+		data() {
+			return {
+				activeYearMonthType: '按月',
+				activeYearMonth: ''
+			}
+		},
+		computed: {
+			hiddenAmountReportFlag() {
+				return store.hiddenAmountReportFlag
+			},
+			hasLogin() {
+				return store.hasLogin
+			},
+			userInfo() {
+				return store.userInfo
+			}
+		},
+		onShow() {
+			this.initData()
+		},
+		onLoad(option) {
+			if (option) {
+				if (option.activeYearMonthType === '1' || option.activeYearMonthType === 1) {
+					this.activeYearMonthType = '按月'
+				}
+				if (option.activeYearMonthType === '2' || option.activeYearMonthType === 2) {
+					this.activeYearMonthType = '按年'
+				}
+				if (option.activeYearMonth) {
+					this.activeYearMonth = option.activeYearMonth
+				}
+			}
+		},
+		onPullDownRefresh() {
+			if (!this.hasLogin) {
+				uni.stopPullDownRefresh()
+				return
+			}
+			this.initData()
+		},
+		methods: {
+			hiddenAmountReportFun() {
+				mutations.setHiddenAmountReportFlagStore(!this.hiddenAmountReportFlag)
+			},
+			initData() {
+				this.$nextTick(() => {
+					if (this.activeYearMonthType === '按月') {
+						this.$refs.reportsMonth && this.$refs.reportsMonth.initData()
+					} else {
+						this.$refs.reportsYear && this.$refs.reportsYear.initData()
+					}
+					uni.stopPullDownRefresh()
+				})
+			},
+			dateFilterShow() {
+				this.showModal('showMonthAndYear')
+			},
+			selectMonthAndYear(type) {
+				this.activeYearMonthType = type
+				this.closeModal('showMonthAndYear')
+				this.initData()
+			},
+			showModal(typePopup) {
+				this.$refs[typePopup].open()
+			},
+			closeModal(typePopup) {
+				this.$refs[typePopup].close()
+			}
+		}
+	};
+</script>
+
+<style lang="scss" scoped>
+	/* 请根据实际需求修改父元素尺寸，组件自动识别宽高 */
+	.report_charts_container {
+		.filter_top {
+			background: #007AFF;
+			margin: 0;
+		}
+
+		.report_contain_wrapper {
+			background: #fff;
+			height: calc(100vh);
+		}
+
+		.filter_box {
+			padding: 20rpx 40rpx 0 40rpx;
+		}
+	}
+</style>

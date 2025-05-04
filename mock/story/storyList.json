@@ -1,0 +1,25 @@
+{
+  "data": {
+    resultData: [{
+      title: '舟山',
+      bgUrl: 'https://img-blog.csdnimg.cn/b89277808fab440991b8fe8fc4d01bdc.jpeg',
+      list: [{
+        secTitle: '舟山',
+        time: '2023-10-31',
+        secDes: '大青山、东沙、观音法界',
+        secBgUrl: 'https://img-blog.csdnimg.cn/1730b9f2cb1e497f9774b794e81c9394.jpeg',
+        url: '/zhoushan/detail'
+      }]
+    }, {
+      title: '苏州',
+      bgUrl: 'https://img-blog.csdnimg.cn/1ae391d521184e1dac58d4a7d7780729.jpeg',
+      list: [{
+        secTitle: '苏州',
+        time: '2023-10-26',
+        secDes: '虎丘、金鸡湖、观前街、狮子林',
+        secBgUrl: 'https://img-blog.csdnimg.cn/9bd9997fc5ba40f3855109ffce7598dd.jpeg',
+        url: '/suzhou/detail'
+      }]
+    }]
+  }
+}

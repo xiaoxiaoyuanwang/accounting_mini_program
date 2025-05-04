@@ -1,0 +1,508 @@
+<template>
+	<wrapperPage>
+		<view class="rank_container">
+			<view class="filter_top">
+				<view class="filter_box2">
+					<view class="flex_row algin_c flex_justify_between">
+						<view class="flex_row algin_c">
+							<view class="filter_container" @click="dateTypeFilterShow">
+								<text class="filter_date">
+									{{activeYearMonthType}}
+								</text>
+								<u-icon name="arrow-down-fill" color="#fff" size="12"></u-icon>
+							</view>
+
+							<view class="filter_container" @click="dateFilterShow">
+								<text v-if="activeYearMonthType === '按月'" class="filter_date"
+									style="line-height: 52rpx;">
+									{{activeYearMonth|formatData('YYYY年MM月')}}
+								</text>
+								<text v-if="activeYearMonthType === '按年'" class="filter_date"
+									style="line-height: 52rpx;">
+									{{activeYearMonth|formatData('YYYY年')}}
+								</text>
+								<u-icon name="arrow-down-fill" color="#fff" size="12"></u-icon>
+							</view>
+
+							<view v-if="hasLogin" slot="filterRight" @click="hiddenAmountReportFun">
+								<uni-icons v-if="!hiddenAmountReportFlag" color="#fff" type="eye" size="20"></uni-icons>
+								<uni-icons v-else color="#fff" type="eye-slash" size="20"></uni-icons>
+							</view>
+
+						</view>
+
+						<view class="flex_row">
+							<view class="filter_types_item" :key="index" v-for="(item, index) in typeList">
+								<u-tag size="mini" :text="item" :color="item == consumption_type? '#fff':'#666'"
+									:borderColor="item == consumption_type? '#fff':'#666'"
+									:plain="item != consumption_type" :name="item" @click="radioTypeClick(item)">
+								</u-tag>
+							</view>
+						</view>
+
+					</view>
+
+					<view class="flex_row algin_c flex_justify_between pt15">
+						<text v-if="activeYearMonthType === '按月'" class="filter_date filter_date2">
+							{{activeYearMonth|formatData('M月')}}{{consumption_type}}排行榜
+						</text>
+						<text v-if="activeYearMonthType === '按年'" class="filter_date filter_date2">
+							{{activeYearMonth|formatData('YYYY年')}}{{consumption_type}}排行榜
+						</text>
+						<view class="flex_row">
+							<view class="filter_types_item" :key="index" v-for="(item, index) in rankTypeList">
+								<u-tag size="mini" :text="item" :color="item == activeRankTypes? '#fff':'#666'"
+									:borderColor="item == activeRankTypes? '#fff':'#666'"
+									:plain="item != activeRankTypes" :name="item" @click="radioClick(item)">
+								</u-tag>
+							</view>
+						</view>
+					</view>
+
+				</view>
+			</view>
+
+			<scroll-view class="contain_wrapper" :scroll-top="scrollTop" scroll-y="true" @scrolltolower="lowerFun">
+				<view>
+					<view>
+						<template v-if="rankList.length > 0">
+							<ListItem itemType="rank" :consumption_type="consumption_type"
+								:activeYearMonthType="activeYearMonthType" :activeYearMonth="activeYearMonth"
+								:activeRankTypes="activeRankTypes" :hiddenAmountFlag="hiddenAmountReportFlag"
+								:itemData="rankList">
+								<view slot="bottom">
+									<loadAllData v-if="isAll"></loadAllData>
+								</view>
+							</ListItem>
+						</template>
+						<template v-else>
+							<view v-if="countNum === null">
+								<u-skeleton rows='5' rowsHeight='30' :loading="true" :animate="true"></u-skeleton>
+							</view>
+							<view style="padding-top: 160rpx;" v-else>
+								<u-empty>
+								</u-empty>
+							</view>
+						</template>
+					</view>
+				</view>
+			</scroll-view>
+
+			<uni-popup ref="showMonthAndYear" background-color="#f8f8f8" type="bottom">
+				<view class="types_edit_view">
+					<view class="edit_del" :style="{color:activeYearMonthType === '按月'?'#007AFF':'#000'}"
+						@click="selectMonthAndYear('按月')">
+						按月
+					</view>
+					<view class="edit_edit" :style="{color:activeYearMonthType === '按年'?'#007AFF':'#000'}"
+						@click="selectMonthAndYear('按年')">
+						按年
+					</view>
+					<view @click="closeModal('showMonthAndYear')" class="edit_close">
+						取消
+					</view>
+				</view>
+			</uni-popup>
+
+			<!-- 选择月份 -->
+			<uni-popup ref="showMonth" background-color="#f8f8f8" type="bottom">
+				<view class="types_wrapper_view">
+					<view class="close_btn">
+						<view class="close_icon">
+							<u-icon name="close" size="20" @click="closeModal('showMonth')"></u-icon>
+						</view>
+						<view>
+							{{
+							activeYearMonthType === '按年'?'请选择年':'请选择月份'
+						}}
+
+						</view>
+					</view>
+					<scroll-view class="types_btns_view" scroll-y="true" scroll-with-animation="true">
+						<popupBtn :popupType="selectMonth" @btnClickCb='monthChange' :listObj="monthListObj"
+							:activeType="activeMonth" :activeTypeFirst="activeYear">
+						</popupBtn>
+					</scroll-view>
+				</view>
+			</uni-popup>
+
+		</view>
+	</wrapperPage>
+</template>
+
+<script>
+	import {
+		store,
+		mutations
+	} from '@/uni_modules/uni-id-pages/common/store.js'
+	import dayjs from 'dayjs'
+	import ListItem from "@/secpackage/components/ListItem/ListItem"
+	const db = uniCloud.database()
+	const db2 = uniCloud.databaseForJQL()
+	const dbcmd = db.command
+	const formatDe = "YYYY-MM"
+	const formatDe2 = "YYYY-MM-DD"
+	const xm_consumption_pages = 'xm-consumption-pages'
+	export default {
+		components: {
+			ListItem
+		},
+		data() {
+			return {
+				activeYearMonthType: '按月',
+				scrollTop: 0,
+				monthListObj: {},
+				activeMonth: '',
+				activeYear: '',
+				toView: '',
+				activeYearMonth: '',
+				consumption_type: '',
+				typeList: [
+					'支出', '收入', '不计'
+				],
+				rankTypeList: [
+					'金额', '分类'
+				],
+				activeRankTypes: '金额',
+				chartData: [],
+				chartDataMonth: [],
+				allAmountMonthData: {},
+				rankList: [],
+				limitNum: 20,
+				countNum: null
+			}
+		},
+		computed: {
+			selectMonth() {
+				return this.activeYearMonthType === '按月' ? 'selectMonth' : 'selectYear'
+			},
+			isAll() {
+				return this.countNum !== null && this.rankList.length >= this.countNum
+			},
+			hiddenAmountReportFlag() {
+				return store.hiddenAmountReportFlag
+			},
+			hasLogin() {
+				return store.hasLogin
+			},
+			hiddenAmountReportFlag() {
+				return store.hiddenAmountReportFlag
+			},
+			getAmountFormat() {
+				return (num, type) => {
+					if (this.hiddenAmountReportFlag) {
+						return '*****'
+					} else {
+						let formatAmount = this.$options.filters['formatAmount']
+						let changeToThousand = this.$options.filters['changeToThousand']
+						if (type) {
+							return changeToThousand(formatAmount(num), type)
+						} else {
+							return changeToThousand(formatAmount(num))
+						}
+					}
+				}
+			},
+			getAmountNumFormat() {
+				return (num) => {
+					if (this.hiddenAmountReportFlag) {
+						return '***'
+					} else {
+						return num
+					}
+				}
+			},
+		},
+		created() {
+			this.initDateList()
+		},
+		onPullDownRefresh() {
+			if (!this.hasLogin) {
+				uni.stopPullDownRefresh()
+				return
+			}
+			this.initData()
+		},
+		mounted() {
+			uni.$on('rank', () => {
+				this.initData()
+			})
+		},
+		onLoad(option) {
+			if (option.activeYearMonthType === '1' || option.activeYearMonthType === 1) {
+				this.activeYearMonthType = '按月'
+			}
+			if (option.activeYearMonthType === '2' || option.activeYearMonthType === 2) {
+				this.activeYearMonthType = '按年'
+			}
+			this.activeYearMonth = dayjs().format(formatDe)
+			if (option.activeYearMonth) {
+				this.activeYearMonth = option.activeYearMonth
+			}
+			if (option.consumption_type) {
+				this.consumption_type = option.consumption_type
+			}
+			if (option.queryType) {
+				if (option.queryType == 2) {
+					this.activeRankTypes = '分类'
+				} else {
+					this.activeRankTypes = '金额'
+				}
+			}
+			this.initData()
+		},
+		onPullDownRefresh() {
+			if (!this.hasLogin) {
+				uni.stopPullDownRefresh()
+				return
+			}
+			this.initData()
+		},
+		methods: {
+			hiddenAmountReportFun() {
+				mutations.setHiddenAmountReportFlagStore(!this.hiddenAmountReportFlag)
+			},
+			initDateList() {
+				const y = dayjs().format("YYYY")
+				this.monthListObj = {}
+				if (this.activeYearMonthType === '按月') {
+					for (var i = y; i >= 2022; i--) {
+						if (!this.monthListObj[i + '年']) {
+							let monthArr1 = []
+							for (var j = 0; j < 12; j++) {
+								monthArr1.push({
+									type: i,
+									label: (j + 1) + '月',
+									value: j + 1
+								})
+							}
+							this.monthListObj[i + '年'] = monthArr1
+						}
+					}
+				}
+
+				if (this.activeYearMonthType === '按年') {
+					let monthArr2 = []
+					for (var i = y; i >= 2022; i--) {
+						if (!this.monthListObj['2022']) {
+							monthArr2.push({
+								type: i,
+								label: i + '年',
+								value: i
+							})
+						}
+					}
+					this.monthListObj['2022'] = monthArr2
+				}
+			},
+
+			monthChange({
+				item
+			} = obj) {
+				if (this.activeYearMonthType === '按月') {
+					let m = item.value < 10 ? '0' + item.value : item.value
+					this.activeYearMonth = `${item.type}-${m}`
+					this.activeYear = this.activeYearMonth.slice(0, 4)
+					this.activeMonth = (this.activeYearMonth.slice(5, 7) * 1) + '月'
+				}
+
+				if (this.activeYearMonthType === '按年') {
+					this.activeYearMonth = `${item.type}`
+					this.activeMonth = this.activeYearMonth + '年'
+					this.activeYear = this.activeYearMonth
+				}
+
+				this.closeModal('showMonth')
+
+				this.initData()
+			},
+			dateFilterShow() {
+				if (this.activeYearMonthType === '按月') {
+					this.activeYear = this.activeYearMonth.slice(0, 4)
+					this.activeMonth = (this.activeYearMonth.slice(5, 7) * 1) + '月'
+				}
+
+				if (this.activeYearMonthType === '按年') {
+					this.activeMonth = this.activeYearMonth.slice(0, 4) + '年'
+					this.activeYear = this.activeYearMonth.slice(0, 4)
+				}
+				this.showModal('showMonth')
+			},
+			dateTypeFilterShow() {
+				this.showModal('showMonthAndYear')
+			},
+			selectMonthAndYear(type) {
+				this.activeYearMonthType = type
+				this.activeYearMonth = dayjs().format(formatDe)
+				this.closeModal('showMonthAndYear')
+				this.initDateList()
+				this.initData()
+			},
+			showModal(typePopup) {
+				this.$refs[typePopup].open()
+			},
+			closeModal(typePopup) {
+				this.$refs[typePopup].close()
+			},
+			initData() {
+				if (!this.hasLogin) {
+					return
+				}
+				uni.stopPullDownRefresh()
+				this.getMonthRankData(0)
+			},
+			radioTypeClick(val) {
+				this.consumption_type = val
+				this.initData()
+			},
+			radioClick(val) {
+				this.activeRankTypes = val
+				this.initData()
+			},
+			// 滑动到底部
+			lowerFun() {
+				if (!this.getDataFlag) {
+					this.getMonthRankData()
+				}
+			},
+			gotoRankType(item) {
+				if (this.activeRankTypes === '分类') {
+					let de = this.activeYearMonth
+					if (this.activeYearMonthType === '按年') {
+						de = this.activeYearMonth.slice(0, 4)
+					}
+					uni.navigateTo({
+						url: `/secpackage/bookkeeping/rank/rankType?consumption_type=${this.consumption_type}&consumption_label=${item.consumption_label}&activeYearMonth=${de}&activeYearMonthType=${this.activeYearMonthType}`
+					})
+				}
+			},
+			getMonthRankData(n) {
+				if (!this.hasLogin) {
+					this.countNum = 0
+					return
+				}
+				if (!this.activeYearMonth || !this.hasLogin) {
+					this.rankList = []
+					return
+				}
+				this.getDataFlag = true
+				let skipLen = this.rankList.length
+				if (n === 0) {
+					skipLen = 0
+					this.rankList = []
+					this.countNum = null
+				}
+				if (this.countNum !== null && this.rankList.length >= this.countNum) {
+					return
+				}
+				let str = "user_id==$cloudEnv_uid"
+				if (this.consumption_type) {
+					str = str + "&&consumption_type=='" + this.consumption_type + "'"
+				}
+				if (this.activeYearMonthType === '按月') {
+					str = `${str}&&substr(consumption_date, 0, 7) == ${JSON.stringify(this.activeYearMonth)}`
+				}
+
+				if (this.activeYearMonthType === '按年') {
+					str = `${str}&&substr(consumption_date, 0, 4) == ${JSON.stringify(this.activeYearMonth.slice(0, 4))}`
+				}
+				uni.showLoading({
+					title: '加载中'
+				})
+				console.log('str', str);
+				if (this.activeRankTypes == '分类') {
+					db2.collection(xm_consumption_pages).where(
+							str)
+						.field(
+							'consumption_label, consumption_type,consumption_amount, consumption_date,consumption_remark,platform,consumption_icon_class,consumption_icon_color'
+						)
+						.groupBy(
+							'consumption_label,consumption_type'
+						).groupField(
+							'sum(consumption_amount) as consumption_amount, sum(1) as countNum, push({consumption_remark: consumption_remark,consumption_date: consumption_date, consumption_amount: consumption_amount, consumption_icon_color: consumption_icon_color, consumption_label: consumption_label, consumption_type: consumption_type, consumption_icon_class: consumption_icon_class, platform: platform}) as itemsList'
+						)
+						.orderBy(
+							'consumption_amount desc')
+						.skip(skipLen).limit(this.limitNum)
+						.get({
+							getCount: true
+						}).then(res => {
+							let data = res.data
+							for (let i = 0; i < data.length; i++) {
+								let element = data[i]
+								// 如果icon设置了颜色，择取第一个颜色
+								if (element.itemsList && element.itemsList.length > 0) {
+									let findItem = element.itemsList.find(item => {
+										return item.consumption_icon_color
+									})
+									let findItem0 = element.itemsList[0] || {}
+									element.consumption_icon_class = findItem0.consumption_icon_class
+									if (findItem && findItem.consumption_icon_color) {
+										element.consumption_icon_color = findItem.consumption_icon_color
+									}
+								}
+							}
+							this.countNum = res.count
+							if (n === 0) {
+								this.rankList = []
+								this.$nextTick(() => {
+									this.scrollTop = 0
+								});
+							}
+							let allData = this.rankList.concat(data)
+							this.rankList = allData
+						}).finally(() => {
+							uni.hideLoading()
+							uni.stopPullDownRefresh()
+							this.getDataFlag = false
+						})
+				}
+				if (this.activeRankTypes == '金额') {
+					db2.collection(xm_consumption_pages).where(
+							str)
+						.orderBy("consumption_amount desc, consumption_date desc")
+						.skip(skipLen).limit(this.limitNum)
+						.get({
+							getCount: true
+						}).then(res => {
+							let data = res.data
+							this.countNum = res.count
+							if (n === 0) {
+								this.rankList = []
+								this.$nextTick(() => {
+									this.scrollTop = 0
+								});
+							}
+							let allData = this.rankList.concat(data)
+							this.rankList = allData
+						}).finally(() => {
+							uni.hideLoading()
+							uni.stopPullDownRefresh()
+							this.getDataFlag = false
+						})
+				}
+			},
+		}
+	};
+</script>
+
+<style lang="scss" scoped>
+	/* 请根据实际需求修改父元素尺寸，组件自动识别宽高 */
+	.rank_container {
+
+		.contain_wrapper {
+			height: calc(100vh - 214rpx);
+		}
+
+		.filter_date2 {
+			font-size: 32rpx;
+		}
+
+		.title_view {
+			padding: 40rpx 0;
+			font-size: 32rpx;
+			justify-content: space-between;
+			align-items: center;
+		}
+	}
+</style>

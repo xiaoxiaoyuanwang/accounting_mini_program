@@ -1,0 +1,98 @@
+<template>
+	<wrapperPage>
+		<view class="problem_wrapper">
+			<view :key="index" v-for="(item, index) in dataList">
+				<view v-if="item.title" class="title_view" v-html="item.title">
+				</view>
+				<view v-if="item.content" class="title_content_view" v-html="item.content">
+				</view>
+				<view v-if="item.imgList" style="flex-wrap: wrap;" class="flex_row">
+					<view class="title_img_view" :key="indexImg" v-for="(itemImg, indexImg) in item.imgList">
+						<u--image @click="previewImageFun(itemImg.url)" :showLoading="true" radius="10rpx"
+							:src="itemImg.url" :width="itemImg.imgStyle.width" :height="itemImg.imgStyle.height">
+							<template v-slot:loading>
+								<u-loading-icon color="#999"></u-loading-icon>
+							</template>
+						</u--image>
+					</view>
+				</view>
+			</view>
+		</view>
+	</wrapperPage>
+</template>
+<script>
+	const db = uniCloud.database()
+	const xm_consumption_playingmethod = "xm-consumption-playingmethod"
+	export default {
+		data() {
+			return {
+				dataList: [],
+				previewImageList: []
+			}
+		},
+		onLoad() {
+			db.collection(xm_consumption_playingmethod)
+				.where({
+					isShow: true
+				}).orderBy(
+					'rank asc').get().then(res => {
+					let dt = res.result.data
+					let resImgList = []
+					for (let i = 0; i < dt.length; i++) {
+						let item = dt[i]
+						if (item.imgList && item.imgList.length > 0) {
+							for (let j = 0; j < item.imgList.length; j++) {
+								let secItem = item.imgList[j]
+								resImgList.push(secItem.url)
+							}
+						}
+					}
+					this.previewImageList = resImgList
+					this.dataList = dt
+				})
+		},
+		methods: {
+			previewImageFun(current) {
+				uni.previewImage({
+					urls: this.previewImageList,
+					current: current
+				});
+			}
+		},
+		onShareAppMessage() {
+			return {
+				title: '欢迎体验小明记账簿',
+				path: '/secpackage/my/playingmethod/playingmethod'
+			}
+		},
+		onShareTimeline() {
+			return {
+				title: '欢迎体验小明记账簿',
+				path: '/secpackage/my/playingmethod/playingmethod',
+				// imageUrl: 'https://qiniu-web-assets.dcloud.net.cn/unidoc/zh/shuijiao.jpg',
+				query: ''
+			}
+		}
+	}
+</script>
+
+<style lang="scss">
+	.problem_wrapper {
+		padding: 80rpx 40rpx 100rpx;
+		line-height: 1.6;
+
+		.title_view {
+			padding: 30rpx 0;
+			font-size: 36rpx;
+			font-weight: bolder;
+		}
+
+		.title_content_view {
+			padding-bottom: 30rpx;
+		}
+
+		.title_img_view {
+			padding: 10rpx 6rpx;
+		}
+	}
+</style>

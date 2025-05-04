@@ -1,0 +1,103 @@
+<template>
+	<wrapperPage>
+		<view class="reward_wrapper">
+			<view class="title_view">
+				你的鼓励是我们前进的动力
+			</view>
+			<view class="img_wrapper" :key="index" v-for="(item,index) in imgList">
+				<view class="img_view">
+					<u--image :showLoading="true" :src="item.url" width="40vw" height="40vw">
+						<template v-slot:loading>
+							<u-loading-icon color="#999"></u-loading-icon>
+						</template>
+					</u--image>
+				</view>
+				<view class="img_title">
+					{{
+					item.type=="MP-WEIXIN"?"微信":"支付宝"
+				}}
+				</view>
+				<view class="img_tip">长按保存图片</view>
+			</view>
+		</view>
+	</wrapperPage>
+</template>
+
+<script>
+	const db = uniCloud.database()
+	const xm_consumption_rewards = "xm-consumption-rewards"
+	export default {
+		data() {
+			return {
+				imgList: []
+			}
+		},
+		onLoad() {
+			db.collection(xm_consumption_rewards)
+				.where({
+					show: true
+				})
+				.get().then(res => {
+					this.imgList = res.result.data
+				})
+		},
+		onShareAppMessage() {
+			return {
+				title: '欢迎体验小明记账簿',
+				path: '/secpackage/my/reward'
+			}
+		},
+		onShareTimeline() {
+			return {
+				title: '欢迎体验小明记账簿',
+				path: '/secpackage/my/reward',
+				// imageUrl: 'https://qiniu-web-assets.dcloud.net.cn/unidoc/zh/shuijiao.jpg',
+				query: ''
+			}
+		}
+	}
+</script>
+
+<style lang="scss">
+	.reward_wrapper {
+		padding: 60rpx 40rpx;
+
+		.title_view {
+			align-items: center;
+			flex-direction: row;
+			justify-content: center;
+			font-size: 48rpx;
+			padding: 60rpx 0;
+			background: linear-gradient(to bottom right, #ff0000, #ffa500, #4b0082, #ffff00, #008000, #0000ff);
+			background-clip: text;
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		.img_wrapper {
+			justify-content: center;
+			align-items: center;
+		}
+
+		.img_wrapper:not(:last-child) {
+			margin-bottom: 60rpx;
+		}
+
+		.img_view {
+			padding: 40rpx;
+			border-radius: 20rpx;
+			background-color: #fff;
+			width: calc(40vw + 80rpx);
+			height: calc(40vw + 80rpx);
+		}
+
+		.img_title {
+			font-size: 36rpx;
+			padding: 20rpx 0;
+		}
+
+		.img_tip {
+			color: #999;
+		}
+	}
+</style>

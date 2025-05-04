@@ -1,0 +1,127 @@
+<template>
+	<wrapperPage>
+		<view class="privacy_agreement">
+			<view class="titleH1 titleView titleW">
+				<text class="titleText">
+					小明记账簿隐私政策和 COOKIE 政策概要
+				</text>
+			</view>
+			<view class="textView">更新与生效日期：2024年3月</view>
+			<view class="textView">
+				我们非常注重保护用户（“您”）的个人信息及隐私，并希望通过本概要向您简要介绍我们如何收集、
+				使用和保护您的个人信息。本概要为《小明记账簿隐私政策和 COOKIE 政策概要》
+				的介绍，如您希望了解我们详细的隐私政策及Cookie政策，请查阅概要后的正文。
+			</view>
+			<view class="titleH2 titleW">
+				一、我们如何收集和使用您的个人信息
+			</view>
+			<view class="titleH3 titleW">
+				注册信息
+			</view>
+			<view class="textView">
+				在您注册时，你需要提供用户名、昵称、登录密码、手机号码（非必须，
+				如需要后续找回密码，请及时绑定手机号）以创建账户。
+			</view>
+			<view class="titleH3 titleW">
+				相册
+			</view>
+			<view>
+				<view class="textView">
+					使用目的：我们会获取您相册的读写权限，为您提供保存照片功能和上传用户头像功能。
+				</view>
+				<view class="textView">
+					信息说明：我们仅在您使用对应功能时收集相应信息。不同的系统显示的名称可能有差异。
+					如相册、存储权限等。不使用不会影响基本功能。
+				</view>
+			</view>
+			<view class="titleH3 titleW">
+				设备信息
+			</view>
+			<view>
+				<view class="textView">
+					使用目的：在您访问或使用我们服务的过程中，
+					我们可能会收集您的设备信息，以便获取屏幕分辨率等信息进行界面展示、
+					避免其他设备的异常登录、留存必要的日志信息，从而保障您的帐户安全、
+					交易安全和系统运行安全。
+				</view>
+				<view class="textView">
+					信息说明：我们收集的设备信息包括您的设备识别码（UUID、
+					Android ID、OAID、IDFA、IDFV）、
+					MAC地址、浏览器类型、IP地址、SSID、网络信标和标签等。
+					未经您的同意，我们不会超前获取以上信息。
+				</view>
+			</view>
+			<view class="titleH2 titleW">
+				二、您如何联系我们
+			</view>
+			<view class="textView">
+				你可以通过一下方式与我们联系，我们将在收到您的请求后15个工作日内提供答复，
+				发送电子邮件至我们的个人信息保护联络邮箱：420256620@qq.com
+			</view>
+		</view>
+	</wrapperPage>
+</template>
+
+<script>
+	export default {
+		onShareAppMessage() {
+			return {
+				title: '欢迎体验小明记账簿',
+				path: '/secpackage/my/agreement/privacyAgreement'
+			}
+		},
+		onShareTimeline() {
+			return {
+				title: '欢迎体验小明记账簿',
+				path: '/secpackage/my/agreement/privacyAgreement',
+				// imageUrl: 'https://qiniu-web-assets.dcloud.net.cn/unidoc/zh/shuijiao.jpg',
+				query: ''
+			}
+		}
+	}
+</script>
+
+<style lang="scss">
+	.privacy_agreement {
+		padding: 100rpx 40rpx;
+
+		.titleView {
+			align-items: center;
+			padding: 60rpx 0;
+		}
+
+		.titleText {
+			width: 70%;
+			line-height: 1.8;
+			text-align: center;
+		}
+
+		.textView {
+			line-height: 1.5;
+			padding-bottom: 40rpx;
+		}
+
+		.titleH1 {
+			font-size: 40rpx;
+		}
+
+		.titleH2 {
+			font-size: 36rpx;
+			line-height: 1.6;
+			padding: 40rpx 0;
+		}
+
+		.titleH3 {
+			font-size: 32rpx;
+			padding-bottom: 30rpx;
+		}
+
+		.titleW {
+			font-weight: bolder;
+		}
+
+		.colorB {
+			color: #000;
+		}
+	}
+</style>

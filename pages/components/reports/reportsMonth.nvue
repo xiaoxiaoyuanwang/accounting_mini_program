@@ -1,0 +1,1088 @@
+<template>
+	<wrapperPage>
+		<view class="month_charts_container">
+			<view class="filter_top">
+				<view class="filter_box">
+					<view class="flex_row algin_c">
+						<slot name="filter"></slot>
+						<view class="filter_container" @click="dateFilterShow">
+							<text class="filter_date" style="line-height: 52rpx;">
+								{{activeYearMonth|formatData('YYYY年MM月')}}
+							</text>
+							<u-icon name="arrow-down-fill" color="#fff" size="12"></u-icon>
+						</view>
+						<slot name="filterRight"></slot>
+					</view>
+					<view class="flex_row">
+						<view class="filter_types_item" :key="index" v-for="(item, index) in typeList">
+							<u-tag size="mini" :text="item" :color="item == consumption_type? '#fff':'#666'"
+								:borderColor="item == consumption_type? '#fff':'#666'" :plain="item != consumption_type"
+								:name="item" @click="radioClick(item)">
+							</u-tag>
+						</view>
+					</view>
+				</view>
+
+				<view class="summary_all_box">
+					<view class="summary_all_title">
+						<text>共{{consumption_type}}</text>
+					</view>
+					<view v-if="allAmountMonthData.total_amount" class="summary_all_num">
+						<text
+							v-if="consumption_type=='支出'">￥{{getAmountFormat(-allAmountMonthData.total_amount)}}</text>
+						<text v-if="consumption_type=='收入'">￥{{getAmountFormat(allAmountMonthData.total_amount)}}</text>
+						<text
+							v-if="consumption_type=='不计'">￥{{getAmountFormat(allAmountMonthData.total_amount, 1)}}</text>
+					</view>
+					<view v-else class="summary_all_num">
+						￥ {{getAmountFormat(0)}}
+					</view>
+				</view>
+			</view>
+			<scroll-view :class="isMonth==='isMonth'?'contain_wrapper contain_wrapper_month':'contain_wrapper'"
+				scroll-y="true">
+				<view>
+
+					<view>
+						<view class="report_title_view flex_row flex_justify_between flex_align_center">
+							<text>
+								钱都去哪儿
+							</text>
+							<text style="color: #007aff;font-size: 28rpx;" @click="gotoRank(2)">
+								更多>
+							</text>
+						</view>
+						<template v-if="rankEchartsList.length>0">
+							<view style="height: 500rpx">
+								<l-echart custom-style="height: 500rpx" ref="chartTop"></l-echart>
+							</view>
+						</template>
+						<template v-else>
+							<u-empty>
+							</u-empty>
+						</template>
+					</view>
+
+					<view>
+						<view class="report_title_view flex_row flex_justify_between flex_align_center">
+							<text>
+								{{activeYearMonth|formatData('M月')}}{{consumption_type}}排行榜（前十）
+							</text>
+							<text style="color: #007aff;font-size: 28rpx;" @click="gotoRank(1)">
+								更多>
+							</text>
+						</view>
+						<view class="list_container">
+							<template v-if="rankList.length > 0">
+								<ListItem itemType="reportMonth" :hiddenAmountFlag="hiddenAmountReportFlag"
+									:itemData="rankList">
+								</ListItem>
+							</template>
+							<template v-else>
+								<u-empty>
+								</u-empty>
+							</template>
+						</view>
+					</view>
+
+					<view>
+						<view class="report_title_view flex_row flex_align_center">
+							<text>每日对比（最近三十天）</text>
+							<view @click="echartsFlagChange30">
+								<text v-if="echartsFlag30" class="iconfont icon-barchart"
+									style="color: #007aff;font-size: 20px;"></text>
+								<text v-else class="iconfont icon-align-left"
+									style="color: #007aff;font-size: 20px;"></text>
+							</view>
+						</view>
+						<view class="list_container">
+							<template v-if="chartData && chartData.length > 0">
+								<view v-if="echartsFlag30" style="height: 500rpx">
+									<l-echart custom-style="height: 500rpx" ref="chart30"></l-echart>
+								</view>
+								<view v-else>
+									<view v-for="(itemSec,indexSec ) in chartData" :key="indexSec">
+										<view class="list_item">
+											<view class="right_container">
+												<view class="right_item left_text flex_row">
+													<text
+														class="color1 timeC">{{itemSec.time|formatData('YYYY-MM-DD')}}</text>
+													<text class="color1">{{itemSec.time|formatWeek2}}</text>
+													<view v-if="indexSec < chartData.length - 1">
+														<view v-if="itemSec.diff>0" class="flex_row arrowWrapper">
+															<uni-icons type="arrow-up" color="#e43d33"
+																size="15"></uni-icons>
+															<text style="color:#e43d33">
+																{{getAmountFormat(itemSec.diff, 1)}}
+															</text>
+														</view>
+														<view v-else-if="itemSec.diff<0" class="flex_row arrowWrapper">
+															<uni-icons type="arrow-down" color="#18bc37"
+																size="15"></uni-icons>
+															<text style="color:#18bc37">
+																{{getAmountFormat(itemSec.diff, 1)}}
+															</text>
+														</view>
+														<view v-else class="flex_row arrowWrapper">
+															{{getAmountFormat(0)}}
+														</view>
+													</view>
+												</view>
+												<view class="right_item right_text flex_row">
+													<view>
+														<text v-if="itemSec.consumption_type =='收入'" class="pay_in">
+															{{getAmountFormat(itemSec.total_amount)}}
+														</text>
+														<text v-else-if="itemSec.consumption_type =='支出'"
+															class="pay_out">
+															{{getAmountFormat(-itemSec.total_amount)}}
+														</text>
+														<text v-else-if="itemSec.consumption_type =='不计'"
+															class="pay_not">
+															{{getAmountFormat(itemSec.total_amount, 1)}}
+														</text>
+													</view>
+												</view>
+											</view>
+										</view>
+									</view>
+								</view>
+							</template>
+							<template v-else>
+								<u-empty>
+								</u-empty>
+							</template>
+						</view>
+					</view>
+
+					<view>
+						<view class="report_title_view flex_row flex_align_center">
+							<text>月度对比（最近六个月）</text>
+							<view @click="echartsFlagChange6">
+								<text v-if="echartsFlag6" class="iconfont icon-barchart"
+									style="color: #007aff;font-size: 20px;"></text>
+								<text v-else class="iconfont icon-align-left"
+									style="color: #007aff;font-size: 20px;"></text>
+							</view>
+						</view>
+
+						<view class="list_container">
+							<template v-if="chartDataMonth && chartDataMonth.length > 0">
+								<view v-if="echartsFlag6" style="height: 500rpx">
+									<l-echart custom-style="height: 500rpx" ref="chart6"></l-echart>
+								</view>
+								<view v-else>
+									<view v-for="(itemSec,indexSec ) in chartDataMonth" :key="indexSec">
+										<view class="list_item">
+											<view class="right_container">
+												<view class="right_item left_text flex_row">
+													<text class="color1">{{itemSec.time|formatData('YYYY-MM')}}</text>
+													<view v-if="indexSec < chartDataMonth.length - 1">
+														<view v-if="itemSec.diff>0" class="flex_row arrowWrapper">
+															<uni-icons type="arrow-up" color="#e43d33"
+																size="15"></uni-icons>
+															<text style="color:#e43d33">
+																{{getAmountFormat(itemSec.diff, 1)}}
+															</text>
+														</view>
+														<view v-else-if="itemSec.diff<0" class="flex_row arrowWrapper">
+															<uni-icons type="arrow-down" color="#18bc37"
+																size="15"></uni-icons>
+															<text style="color:#18bc37">
+																{{getAmountFormat(itemSec.diff, 1)}}
+															</text>
+														</view>
+														<view v-else class="flex_row arrowWrapper">
+															{{getAmountFormat(0)}}
+														</view>
+													</view>
+												</view>
+												<view class="right_item right_text">
+													<text v-if="itemSec.consumption_type =='收入'" class="pay_in">
+														{{getAmountFormat(itemSec.total_amount)}}
+													</text>
+													<text v-else-if="itemSec.consumption_type =='支出'" class="pay_out">
+														{{getAmountFormat(-itemSec.total_amount)}}
+													</text>
+													<text v-else-if="itemSec.consumption_type =='不计'" class="pay_not">
+														{{getAmountFormat(itemSec.total_amount, 1)}}
+													</text>
+												</view>
+											</view>
+										</view>
+									</view>
+								</view>
+							</template>
+							<template v-else>
+								<u-empty>
+								</u-empty>
+							</template>
+						</view>
+					</view>
+
+				</view>
+			</scroll-view>
+
+			<!-- 选择月份 -->
+			<uni-popup ref="showMonth" background-color="#f8f8f8" type="bottom">
+				<view class="types_wrapper_view">
+					<view class="close_btn">
+						<view class="close_icon">
+							<u-icon name="close" size="20" @click="closeModal('showMonth')"></u-icon>
+						</view>
+						<view>
+							请选择月份
+						</view>
+					</view>
+					<scroll-view class="types_btns_view" :scroll-into-view="toView" scroll-y="true"
+						scroll-with-animation="true">
+						<popupBtn popupType="selectMonth" @btnClickCb='monthChange' :listObj="monthListObj"
+							:activeType="activeMonth" :activeTypeFirst="activeYear">
+						</popupBtn>
+						<!-- <view id='id_bottom_report'></view> -->
+					</scroll-view>
+				</view>
+			</uni-popup>
+		</view>
+	</wrapperPage>
+</template>
+
+<script>
+	import {
+		store
+	} from '@/uni_modules/uni-id-pages/common/store.js'
+	import dayjs from 'dayjs'
+	import ListItem from "@/components/ListItem/ListItem"
+	// https://echarts.apache.org/zh/builder.html
+	// 自定义echarts-图表chart-饼、柱图；坐标系-直角；组件component-提示框
+	import * as echarts from '@/common/echarts.min.js'
+
+	const db = uniCloud.database()
+	const db2 = uniCloud.databaseForJQL()
+	const dbcmd = db.command
+	const formatDe = "YYYY-MM"
+	const formatDe2 = "YYYY-MM-DD"
+	const xm_consumption_pages = 'xm-consumption-pages'
+	const echartsFlagStorageStr30 = 'echartsFlagSrotage30'
+	const echartsFlagStorageStr6 = 'echartsFlagSrotage6'
+	let colorObj = {
+		color: '#007aff'
+	}
+	// #ifdef MP-WEIXIN
+	colorObj = {
+		color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+				offset: 0,
+				color: '#007aff1a'
+			},
+			{
+				offset: 1,
+				color: '#007aff'
+			}
+		])
+	}
+	// #endif
+	export default {
+		components: {
+			ListItem
+		},
+		props: {
+			active_year_month_props: {
+				type: String,
+				default: ''
+			},
+			consumption_type_props: {
+				type: String,
+				default: ''
+			},
+			isMonth: {
+				type: String,
+				default: ''
+			}
+		},
+
+		data() {
+			return {
+				monthListObj: {},
+				activeMonth: '',
+				activeYear: '',
+				toView: '',
+				activeYearMonth: '',
+				consumption_type: '支出',
+				typeList: [
+					'支出', '收入', '不计'
+				],
+				// 每日对比（最近三十天）
+				chartData: [],
+				// 月度对比（最近六个月）
+				chartDataMonth: [],
+				allAmountMonthData: {},
+				// 排行榜
+				rankList: [],
+				// 钱都去哪儿
+				rankEchartsList: [],
+				echartsFlag30: true,
+				echartsFlag6: true,
+			}
+		},
+		computed: {
+			hasLogin() {
+				return store.hasLogin
+			},
+			hiddenAmountReportFlag() {
+				return store.hiddenAmountReportFlag
+			},
+			getAmountFormat() {
+				return (num, type) => {
+					if (this.hiddenAmountReportFlag) {
+						return '*****'
+					} else {
+						let formatAmount = this.$options.filters['formatAmount']
+						let changeToThousand = this.$options.filters['changeToThousand']
+						if (type) {
+							return changeToThousand(formatAmount(num), type)
+						} else {
+							return changeToThousand(formatAmount(num))
+						}
+					}
+				}
+			},
+			getAmountNumFormat() {
+				return (num) => {
+					if (this.hiddenAmountReportFlag) {
+						return '***'
+					} else {
+						return num
+					}
+				}
+			},
+		},
+		created() {
+			if (this.active_year_month_props) {
+				this.activeYearMonth = this.active_year_month_props
+			} else {
+				this.activeYearMonth = dayjs().format(formatDe)
+			}
+		},
+		mounted() {
+			uni.$on('reportMonth', () => {
+				this.initData()
+			})
+			const y = dayjs().format("YYYY")
+			for (var i = y; i >= 2022; i--) {
+				if (!this.monthListObj[i + '年']) {
+					let monthArr = []
+					for (var j = 0; j < 12; j++) {
+						monthArr.push({
+							type: i,
+							label: (j + 1) + '月',
+							value: j + 1
+						})
+					}
+					this.monthListObj[i + '年'] = monthArr
+				}
+			}
+			if (!this.hasLogin) {
+				this.chartData = []
+				this.chartDataMonth = []
+				this.allAmountMonthData = {}
+				this.rankList = []
+				this.rankEchartsList = []
+				return
+			}
+			this.$nextTick(() => {
+				let storageVal30 = uni.getStorageSync(echartsFlagStorageStr30)
+				let storageVal6 = uni.getStorageSync(echartsFlagStorageStr6)
+				this.echartsFlag30 = (storageVal30 === "" || storageVal30 === undefined) ? true : storageVal30
+				this.echartsFlag6 = (storageVal6 === "" || storageVal6 === undefined) ? true : storageVal6
+			})
+			// if (this.isMonth === 'isMonth') {
+
+			// } else{
+			// 	this.initData()
+			// }
+		},
+		watch: {
+			activeYearMonth: {
+				handler(newVal, oldVal) {
+					if (newVal !== oldVal) {
+						this.activeYear = newVal.slice(0, 4)
+						this.activeMonth = (newVal.slice(5, 7) * 1) + '月'
+					}
+				},
+				immediate: true
+			},
+			active_year_month_props: {
+				handler(newVal, oldVal) {
+					if (newVal && newVal != oldVal) {
+						this.activeYearMonth = newVal
+					}
+				},
+				immediate: true
+			},
+			consumption_type_props: {
+				handler(newVal, oldVal) {
+					if (newVal) {
+						this.consumption_type = newVal
+					}
+				},
+				immediate: true
+			}
+		},
+		onShow() {
+			// this.activeYearMonth = dayjs().format(formatDe)
+			// this.initData()
+		},
+		methods: {
+			// 切换模式
+			echartsFlagChange30() {
+				this.echartsFlag30 = !this.echartsFlag30
+				uni.setStorageSync(echartsFlagStorageStr30, this.echartsFlag30)
+				this.renderEchartsFun(2)
+			},
+			echartsFlagChange6() {
+				this.echartsFlag6 = !this.echartsFlag6
+				uni.setStorageSync(echartsFlagStorageStr6, this.echartsFlag6)
+				this.renderEchartsFun(3)
+			},
+			// 钱都去哪儿
+			getEchartsRankData() {
+				let str = "user_id==$cloudEnv_uid"
+				if (this.consumption_type) {
+					str = str + "&&consumption_type=='" + this.consumption_type + "'"
+				}
+				str = `${str}&&substr(consumption_date, 0, 7) == ${JSON.stringify(this.activeYearMonth)}`
+				db.collection(xm_consumption_pages).where(
+						str)
+					.field(
+						'consumption_label, consumption_type,consumption_amount, consumption_date,consumption_remark,platform,consumption_icon_class'
+					)
+					.groupBy(
+						'consumption_label,consumption_type,consumption_icon_class'
+					).groupField('sum(consumption_amount) as consumption_amount, sum(1) as countNum')
+					.orderBy(
+						'consumption_amount desc').limit(100)
+					.get({
+						getCount: true
+					}).then(res => {
+						let data = res.result.data
+						this.rankEchartsList = data
+						this.renderEchartsFun(1)
+					}).finally(() => {})
+			},
+			renderEchartsFun(type) {
+				this.$nextTick(() => {
+
+					if (type === 1) {
+						this.initEchartsFun()
+						// #ifdef MP-ALIPAY
+						setTimeout(() => {
+							this.initEchartsFun()
+						}, 150)
+						// #endif
+					}
+					if (type === 2) {
+						this.initEchartsFun30()
+						// #ifdef MP-ALIPAY
+						setTimeout(() => {
+							this.initEchartsFun30()
+						}, 150)
+						// #endif
+					}
+					if (type === 3) {
+						this.initEchartsFun6()
+						// #ifdef MP-ALIPAY
+						setTimeout(() => {
+							this.initEchartsFun6()
+						}, 150)
+						// #endif
+					}
+				})
+			},
+			// 分类统计
+			initEchartsFun() {
+				this.$nextTick(() => {
+					let formatAmount = this.$options.filters['formatAmount']
+					let changeToThousand = this.$options.filters['changeToThousand']
+					let seriesData = []
+					// 求总数
+					let totalNum = 0
+					for (let i = 0; i < this.rankEchartsList.length; i++) {
+						const item = this.rankEchartsList[i]
+						totalNum += item.consumption_amount
+					}
+					for (let i = 0; i < this.rankEchartsList.length; i++) {
+						const item = this.rankEchartsList[i]
+						let labelStr = item.consumption_amount / totalNum
+						labelStr = formatAmount(labelStr * 10000) + '%'
+						let obj = {
+							value: formatAmount(item.consumption_amount),
+							valueTip: item.consumption_amount,
+							name: item.consumption_label,
+							percentVal: labelStr,
+							countNum: item.countNum
+						}
+						seriesData.push(obj)
+					}
+					this.$refs.chartTop && this.$refs.chartTop.init(echarts, chart => {
+						let option = {
+							color: ['#007aff', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272',
+								'#fc8452', '#9a60b4',
+								'#ea7ccc', '#fcce10', '#e87c25', '#b5c334', '#fe8463', '#26c0c0',
+								'#cda819', '#5ab1ef',
+								'#f58db2', '#59c4e6'
+							],
+							animation: false,
+							tooltip: {
+								trigger: 'item',
+								formatter: (params) => {
+									let str =
+										`${params.seriesName}\n${params.data.name}: 共${this.getAmountNumFormat(params.data.countNum)}笔, ${params.data.percentVal}\n${this.getAmountFormat(params.data.valueTip, 1)}￥`
+									return `${str}`
+								}
+							},
+							series: [{
+								name: `${this.consumption_type}构成`,
+								type: 'pie',
+								padAngle: 0.5,
+								radius: ['28%', '48%'],
+								center: ['50%', '50%'],
+								data: seriesData,
+								// labelLine: {
+								// 	smooth: true,
+								// 	length: 15,
+								// 	length2: 0,
+								// 	maxSurfaceAngle: 80
+								// },
+								label: {
+									color: '#333',
+									fontSize: 11,
+									// alignTo: 'edge',
+									minMargin: 3,
+									// lineHeight: 12,
+									// edgeDistance: 10,
+									formatter(params) {
+										return params.data.name + " " + params.data.percentVal
+									}
+								}
+							}]
+						}
+						chart.setOption(option)
+					})
+				})
+			},
+			dateFilterShow() {
+				this.showModal('showMonth')
+				// this.$nextTick(() => {
+				// 	this.toView = 'id_bottom_report'
+				// })
+			},
+			initData() {
+				if (!this.hasLogin) {
+					return
+				}
+				this.$nextTick(() => {
+					this.getEchartsRankData()
+				})
+				this.getDayData()
+				this.getMonthAllAmountData()
+				this.getMonthData()
+				this.getMonthRankData()
+			},
+			radioClick(val) {
+				this.consumption_type = val
+				this.$nextTick(() => {
+					this.initData()
+				})
+			},
+			showModal(typePopup) {
+				this.$refs[typePopup].open()
+			},
+			closeModal(typePopup) {
+				this.$refs[typePopup].close()
+			},
+			monthChange({
+				item
+			} = obj) {
+				this.activeTypeFirst = item.type
+				let m = item.value < 10 ? '0' + item.value : item.value
+				this.activeYearMonth = `${item.type}-${m}`
+				this.closeModal('showMonth')
+				this.initData()
+			},
+			// 每日对比（最近三十天）
+			getDayData() {
+				if (!this.hasLogin) {
+					return
+				}
+				let str = "user_id==$cloudEnv_uid"
+				if (this.consumption_type) {
+					str = str + "&&consumption_type=='" + this.consumption_type + "'"
+				}
+				str = `${str}&&substr(consumption_date, 0, 7) <= ${JSON.stringify(this.activeYearMonth)}`
+				db.collection(xm_consumption_pages).where(
+						str)
+					.field(
+						'consumption_label, consumption_type,consumption_amount, substr(consumption_date, 0, 10)  as time')
+					.groupBy('time, consumption_type').groupField('sum(consumption_amount) as total_amount')
+					.orderBy(
+						'time desc')
+					.limit(30)
+					.get().then(res => {
+						let dt = res.result.data
+						for (var i = 0; i < dt.length - 1; i++) {
+							let itemObj1 = dt[i]
+							let itemObj2 = dt[i + 1]
+							itemObj1.diff = itemObj1.total_amount - itemObj2.total_amount
+						}
+						this.chartData = dt
+						this.renderEchartsFun(2)
+					})
+			},
+			// 近30天图表
+			initEchartsFun30() {
+				if (!this.echartsFlag30) {
+					return
+				}
+				this.$nextTick(() => {
+					let formatAmount = this.$options.filters['formatAmount']
+					let formatData = this.$options.filters['formatData']
+					let data = JSON.parse(JSON.stringify(this.chartData))
+					data = data.reverse()
+					let seriesData = []
+					let xAxisData = []
+					for (let i = 0; i < data.length; i++) {
+						const item = data[i]
+						let obj = {
+							value: formatAmount(item.total_amount),
+							valueTip: item.total_amount,
+							name: formatData(item.time, 'M.D'),
+							diff: item.diff,
+							time: item.time,
+							itemStyle: {
+								borderRadius: [7, 7, 0, 0],
+								...colorObj
+							}
+						}
+						seriesData.push(obj)
+						xAxisData.push(formatData(item.time, 'M.D'))
+					}
+					this.$refs.chart30 && this.$refs.chart30.init(echarts, chart => {
+						let option = {
+							color: ['#007aff'],
+							animation: false,
+							tooltip: {
+								trigger: 'axis',
+								borderWidth: 0.6,
+								borderColor: '#007aff',
+								formatter: (params) => {
+									let itemTool = params[0]
+									let itemTool1 = params[1]
+									let itemTool2 = params[2]
+									let str =
+										`${formatData(itemTool.data.time, 'M月D日')}共${itemTool.seriesName}\n${this.getAmountFormat(itemTool.data.valueTip, 1)}￥`
+									if (itemTool.data.diff > 0) {
+										str =
+											`${str}\n较前日  ${itemTool1.marker}${this.getAmountFormat(itemTool.data.diff, 1)}￥`
+									} else if (itemTool.data.diff < 0) {
+										str =
+											`${str}\n较前日  ${itemTool2.marker}${this.getAmountFormat(itemTool.data.diff, 1)}￥`
+									} else if (itemTool.data.diff === 0) {
+										str =
+											`${str}\n较前日  ${itemTool2.marker}${this.getAmountFormat(itemTool.data.diff, 1)}￥`
+									}
+									return `${str}`
+								}
+							},
+							grid: {
+								left: 'auto',
+								right: 30,
+								top: 30,
+								bottom: 20,
+								containLabel: true
+							},
+							xAxis: {
+								name: 'D',
+								data: xAxisData,
+								axisTick: {
+									show: false
+								},
+								axisLine: {
+									show: false
+								},
+								axisLabel: {
+									textStyle: {
+										color: '#333'
+									}
+								}
+							},
+							yAxis: {
+								name: '￥',
+								type: 'value',
+								axisLine: {
+									show: false
+								},
+								axisTick: {
+									show: false
+								},
+								axisLabel: {
+									textStyle: {
+										color: '#333'
+									}
+								}
+							},
+							series: [{
+									name: this.consumption_type,
+									type: 'bar',
+									data: seriesData,
+									barWidth: 7,
+									itemStyle: {
+										borderRadius: [7, 7, 0, 0],
+										...colorObj
+									}
+								},
+								{
+									type: 'pictorialBar',
+									name: 'baseLine1',
+									symbol: 'circle',
+									symbolSize: [0, 0],
+									barWidth: 0,
+									symbolPosition: 'end',
+									color: '#e43d33',
+									z: 2,
+									data: seriesData.map((item) => {
+										return {
+											value: 0
+										}
+									})
+								},
+								{
+									type: 'pictorialBar',
+									name: 'baseLine2',
+									symbol: 'circle',
+									symbolSize: [0, 0],
+									barWidth: 0,
+									symbolPosition: 'end',
+									color: '#18bc37',
+									z: 2,
+									data: seriesData.map((item) => {
+										return {
+											value: 0
+										}
+									})
+								}
+							]
+						}
+						chart.setOption(option)
+					})
+				})
+			},
+			// 月度对比（最近六个月）
+			getMonthData() {
+				if (!this.hasLogin) {
+					return
+				}
+				let str = "user_id==$cloudEnv_uid"
+				if (this.consumption_type) {
+					str = str + "&&consumption_type=='" + this.consumption_type + "'"
+				}
+				str = `${str}&&substr(consumption_date, 0, 7) <= ${JSON.stringify(this.activeYearMonth)}`
+				db.collection(xm_consumption_pages).where(
+						str)
+					.field(
+						'consumption_label, consumption_type,consumption_amount, substr(consumption_date, 0, 7)  as time')
+					.groupBy('time, consumption_type').groupField('sum(consumption_amount) as total_amount')
+					.orderBy(
+						'time desc')
+					.limit(6)
+					.get().then(res => {
+						let dt = res.result.data
+						for (var i = 0; i < dt.length - 1; i++) {
+							let itemObj1 = dt[i]
+							let itemObj2 = dt[i + 1]
+							itemObj1.diff = itemObj1.total_amount - itemObj2.total_amount
+						}
+						this.chartDataMonth = dt
+						this.renderEchartsFun(3)
+					})
+			},
+			// 近6月图表
+			initEchartsFun6() {
+				if (!this.echartsFlag6) {
+					return
+				}
+				this.$nextTick(() => {
+					let formatAmount = this.$options.filters['formatAmount']
+					let formatData = this.$options.filters['formatData']
+					let data = JSON.parse(JSON.stringify(this.chartDataMonth))
+					data = data.reverse()
+					let seriesData = []
+					let xAxisData = []
+					for (let i = 0; i < data.length; i++) {
+						const item = data[i]
+						let obj = {
+							value: formatAmount(item.total_amount),
+							valueTip: item.total_amount,
+							name: formatData(item.time, 'M月'),
+							diff: item.diff,
+							time: item.time,
+							itemStyle: {
+								borderRadius: [15, 15, 0, 0],
+								...colorObj
+							}
+						}
+						seriesData.push(obj)
+						xAxisData.push(formatData(item.time, 'M月'))
+					}
+					this.$refs.chart6 && this.$refs.chart6.init(echarts, chart => {
+						let option = {
+							color: ['#007aff'],
+							animation: false,
+							tooltip: {
+								trigger: 'axis',
+								borderWidth: 0.6,
+								borderColor: '#007aff',
+								formatter: (params) => {
+									let itemTool = params[0]
+									let itemTool1 = params[1]
+									let itemTool2 = params[2]
+									let str =
+										`${formatData(itemTool.data.time, 'M月')}共${itemTool.seriesName}\n${this.getAmountFormat(itemTool.data.valueTip, 1)}￥`
+									if (itemTool.data.diff > 0) {
+										str =
+											`${str}\n较上月  ${itemTool1.marker}${this.getAmountFormat(itemTool.data.diff, 1)}￥`
+									} else if (itemTool.data.diff < 0) {
+										str =
+											`${str}\n较上月  ${itemTool2.marker}${this.getAmountFormat(itemTool.data.diff, 1)}￥`
+									} else if (itemTool.data.diff === 0) {
+										str =
+											`${str}\n较上月  ${itemTool2.marker}${this.getAmountFormat(itemTool.data.diff, 1)}￥`
+									}
+									return `${str}`
+								}
+							},
+							grid: {
+								left: 10,
+								right: 10,
+								top: 30,
+								bottom: 20,
+								containLabel: true
+							},
+							xAxis: {
+								// name: 'M',
+								data: xAxisData,
+								axisTick: {
+									show: false
+								},
+								axisLine: {
+									show: false
+								},
+								axisLabel: {
+									textStyle: {
+										color: '#333'
+									}
+								}
+							},
+							yAxis: {
+								// name: '￥',
+								type: 'value',
+								axisLine: {
+									show: false
+								},
+								axisTick: {
+									show: false
+								},
+								axisLabel: {
+									show: false,
+									textStyle: {
+										color: '#333'
+									}
+								}
+							},
+							series: [{
+									name: this.consumption_type,
+									type: 'bar',
+									data: seriesData,
+									barWidth: 15,
+									label: {
+										show: true,
+										position: 'top',
+										formatter: (params) => {
+											return `${this.getAmountFormat(params.data.valueTip, 1)}￥`
+										}
+									},
+									itemStyle: {
+										borderRadius: [15, 15, 0, 0],
+										...colorObj
+									}
+								},
+								{
+									type: 'pictorialBar',
+									name: 'baseLine1',
+									symbol: 'circle',
+									symbolSize: [0, 0],
+									barWidth: 0,
+									symbolPosition: 'end',
+									color: '#e43d33',
+									z: 2,
+									data: seriesData.map((item) => {
+										return {
+											value: 0
+										}
+									})
+								},
+								{
+									type: 'pictorialBar',
+									name: 'baseLine2',
+									symbol: 'circle',
+									symbolSize: [0, 0],
+									barWidth: 0,
+									symbolPosition: 'end',
+									color: '#18bc37',
+									z: 2,
+									data: seriesData.map((item) => {
+										return {
+											value: 0
+										}
+									})
+								}
+							]
+						}
+						chart.setOption(option)
+					})
+				})
+			},
+			// 排行榜
+			getMonthRankData() {
+				if (!this.hasLogin) {
+					return
+				}
+				let str = "user_id==$cloudEnv_uid"
+				if (this.consumption_type) {
+					str = str + "&&consumption_type=='" + this.consumption_type + "'"
+				}
+				str = `${str}&&substr(consumption_date, 0, 7) == ${JSON.stringify(this.activeYearMonth)}`
+				uni.showLoading({
+					title: '加载中'
+				})
+				db2.collection(xm_consumption_pages).where(
+						str)
+					.orderBy("consumption_amount desc, consumption_date desc")
+					.limit(10)
+					.get().then(res => {
+						this.rankList = res.data
+					}).finally(() => {
+						uni.hideLoading()
+					})
+			},
+			getMonthAllAmountData() {
+				if (!this.hasLogin) {
+					return
+				}
+				let str = "user_id==$cloudEnv_uid"
+				if (this.consumption_type) {
+					str = str + "&&consumption_type=='" + this.consumption_type + "'"
+				}
+				str = `${str}&&substr(consumption_date, 0, 7) == ${JSON.stringify(this.activeYearMonth)}`
+				db.collection(xm_consumption_pages).where(
+						str)
+					.field(
+						'consumption_label, consumption_type,consumption_amount, substr(consumption_date, 0, 7)  as time')
+					.groupBy('time, consumption_type').groupField('sum(consumption_amount) as total_amount')
+					.orderBy(
+						'consumption_amount desc')
+					.limit(10)
+					.get().then(res => {
+						if (res.result.data && res.result.data.length > 0) {
+							this.allAmountMonthData = res.result.data[0]
+						} else {
+							this.allAmountMonthData = {}
+						}
+					})
+			},
+			gotoRank(type) {
+				uni.navigateTo({
+					url: `/secpackage/bookkeeping/rank/rank?consumption_type=${this.consumption_type}&activeYearMonth=${this.activeYearMonth}&queryType=${type}`
+				});
+			}
+		}
+	};
+</script>
+
+<style lang="scss" scoped>
+	/* 请根据实际需求修改父元素尺寸，组件自动识别宽高 */
+	.month_charts_container {
+
+		// .contain_wrapper_month {
+		// 	height: calc(100vh - 280rpx);
+		// }
+
+		.list_container {
+			.rank_view {
+				justify-content: center;
+				padding-right: 20rpx;
+			}
+
+			.rank_num {
+				width: 40rpx;
+				height: 40rpx;
+				align-items: center;
+				justify-content: center;
+			}
+
+			.list_item {
+				flex-direction: row;
+				border-bottom: 2rpx solid #ddd;
+				padding: 20rpx;
+			}
+
+			.img_container {
+				position: relative;
+			}
+
+			.img_item {
+				margin-top: 20rpx;
+				height: 64rpx;
+				width: 64rpx;
+				border-radius: 50%;
+			}
+
+			.tip_img {
+				position: absolute;
+				top: -4rpx;
+				left: 0rpx;
+			}
+
+			.right_container {
+				flex: 1;
+				flex-direction: row;
+				justify-content: space-between;
+				padding-left: 16rpx;
+			}
+
+			.right_item {
+				justify-content: space-between;
+			}
+
+			.left_text {
+				align-items: flex-start;
+			}
+
+			.right_text {
+				align-items: flex-end;
+			}
+
+			.remark_view {
+				flex-direction: row;
+				align-items: center;
+			}
+
+			.arrowWrapper {
+				margin-left: 20rpx;
+			}
+
+			.timeC {
+				width: 180rpx;
+			}
+		}
+	}
+</style>

@@ -1,0 +1,76 @@
+{
+  "data": {
+    info: {
+      title: '这个故事有点长-舟山',
+      author: '小小愿望',
+      time: '2023.10.28-2023.10.29'
+    },
+    resultData: [{
+      type: 'blockquote',
+      content: '这个故事有点长 - 舟山'
+    }, {
+      type: 'title',
+      content: '👉故事的开始'
+    }, {
+      type: 'p',
+      content: '这是一个很长的故事，到底有多长呢？大概也就有六七年那么长吧。刚来上海时就一直想去看海，后来终于如愿以偿了，具体记不清了，只记得当时坐了地铁，又坐了几个小时的公交去了海边，真的很美，烈日炎炎、波涛汹涌，以至于再也不想去第二次了，记得当时还买了一个贝壳做的雄鹰状储钱罐。'
+    }, {
+      type: 'p',
+      content: '后来，不知道在哪看到了舟山的天很蓝，水很清澈，石奇等，很想去一趟，当初做了很久的攻略，第一天去哪？第二天去哪？都安排的妥妥的，当看了一下假期，看了一下去的路线，就搁置了。'
+    }, {
+      type: 'title',
+      content: '🚗第一天'
+    }, {
+      type: 'p',
+      content: '又是早起的一天，吃了早饭，带上小奔从上海直奔舟山而去，一路上跨过隧道群，跨过大桥🎢，浩浩荡荡的行驶了五个小时。下了高速直奔来澜海景•花园度假酒店而去，房间很大，在东沙景区旁边，楼下还有大排档。'
+    }, {
+      type: 'img',
+      content: ['https://img-blog.csdnimg.cn/1f8936b1180e4897a8f77807c47d2bb0.jpeg', 'https://img-blog.csdnimg.cn/410c19922edc4cd4ac7bc6407f3ce429.jpeg', 'https://img-blog.csdnimg.cn/f1f659f6cdfb4ff29fadbd740888471a.jpeg', 'https://img-blog.csdnimg.cn/b4867abda1304924a671a4473fd475c2.jpeg', 'https://img-blog.csdnimg.cn/e7ce2396f6aa43759c5017e74cab3863.jpeg', 'https://img-blog.csdnimg.cn/0e61c0520fe14328b3fd09ba47518841.jpeg']
+    }, {
+      type: 'p',
+      content: '第一站是大青山，门票一百，沿着盘山公路，围着靠近海边的路行驶（有条上山的路没有去），第一个景点是四季花海，没什么看的，花很少，第二个景点是一处沙滩，单向行驶，建议停在沙滩旁边的停车场，路边也可以停，如果没车位的话，要一直往前开，然后再走回来，在沙滩上玩了好久，水很清，天很蓝，可以下水，然后岸上有洗脚的地方，最好带拖鞋吧，不然去洗脚的那一路会不舒服，旁边还有吊床和秋千，可以在那玩会躺会，接下来开车上前走是牛头山观景台，可以俯视大海，很壮观，之后继续前行是猫跳，也是一个平台，我路过的时候五点左右，刚好看到日落，晚霞很漂亮，接下来就没什么景点了，一路下山。'
+    }, {
+      type: 'img',
+      content: ['https://img-blog.csdnimg.cn/091dc56a255649d9a060f544cef2f56a.jpeg', 'https://img-blog.csdnimg.cn/bd68cef2a9344e17952e2a2f089960d0.jpeg', 'https://img-blog.csdnimg.cn/0e69b5c6254143698f17ce116b1a926f.jpeg', 'https://img-blog.csdnimg.cn/afd7f06070ce4769853336caf6951c68.jpeg']
+    }, {
+      type: 'title',
+      content: '🌅第二天'
+    }, {
+      type: 'p',
+      content: '又又是早起的一天，在酒店匆匆吃了早饭，就去了东沙景区，步行十分钟左右，虽说天气不太晴朗，还是如愿看到了海上日出，又玩了一会沙与海，然后就回去睡了一个回笼觉😄😆。本来还想去南沙看沙雕的，结果也没去，要不然真的是我在看沙雕，别人在看我啦🌵。九点左右退房去小乌石塘赶海，结果天不遂人愿，不知为何，酒店出口被拦，堵了好久，然后在志愿者的引导下没能按导航路线走，后来好不容易到了小乌石塘，结果是只出不进，只好作罢。'
+    }, {
+      type: 'img',
+      content: ['https://img-blog.csdnimg.cn/e4e9a0ff68554cd9a815a0bc4a0f156d.jpeg']
+    }, {
+      type: 'p',
+      content: '于是乎改变去观音法界🏯，门票九十，进入之后，首先映入眼帘的是三座桥：'
+    }, {
+      type: 'p',
+      content: ' • 平桥 - 寓意富贵（不让走）'
+    }, {
+      type: 'p',
+      content: ' • 永寿桥 - 永寿桥走一走，活到九十九（进）'
+    }, {
+      type: 'p',
+      content: ' • 瑶池桥 - 寓意吉祥如意（出）'
+    }, {
+      type: 'img',
+      content: ['https://img-blog.csdnimg.cn/7b69291a8af14d829e3c224cc2b09ac0.jpeg', 'https://img-blog.csdnimg.cn/88a92f3ceaf248bab0430c5d63b4ca90.jpeg', 'https://img-blog.csdnimg.cn/69044c46d0ee4d24b6d4d6ec4d96a872.jpeg']
+    }, {
+      type: 'p',
+      content: '接下来的大殿是观音圣坛，很很壮观，不是能用语言能描述的，就是很壮观😆，每隔一段时间还有演出，还是很壮观😄，旁边有电梯，可以上楼，总共九层，八、九层未开放，其余一层一个特色，禁止拍照，只能自己去体会了。'
+    }, {
+      type: 'img',
+      content: ['https://img-blog.csdnimg.cn/1730b9f2cb1e497f9774b794e81c9394.jpeg', 'https://img-blog.csdnimg.cn/62ec54c904c34616a48f6a61a8d7bfc1.jpeg']
+    }, {
+      type: 'title',
+      content: '🚩起点既是终点'
+    }, {
+      type: 'p',
+      content: '时间过得好快，兜兜转转了一圈，从哪来又回了哪去，晚安🌜🌛。'
+    }, {
+      type: 'blockquote',
+      content: '这个故事有点长 - 故事还在继续🏃🏃🏃…'
+    }]
+  }
+}

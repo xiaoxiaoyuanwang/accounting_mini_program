@@ -1,0 +1,314 @@
+<template>
+	<wrapperPage>
+		<view class="sel_year_month_container w100">
+			<view class="flex_row algin_c flex_justify_between">
+				<view class="flex_row algin_c">
+					<view v-if="show_type_flag" class="filter_container" @click="dateFilterShow">
+						<text class="filter_date">
+							{{activeYearMonthType}}
+						</text>
+						<u-icon name="arrow-down-fill" color="#fff" size="12"></u-icon>
+					</view>
+
+					<view class="filter_container" v-if="activeYearMonthType === '按年'" @click="yearFilterShow">
+						<text class="filter_date" style="line-height: 52rpx;">
+							{{activeYearMonth|formatData('YYYY年')}}
+						</text>
+						<u-icon name="arrow-down-fill" color="#fff" size="12"></u-icon>
+					</view>
+
+					<view class="filter_container" v-if="activeYearMonthType === '按月'" @click="monthFilterShow">
+						<text class="filter_date" style="line-height: 52rpx;">
+							{{activeYearMonth|formatData('YYYY年MM月')}}
+						</text>
+						<u-icon name="arrow-down-fill" color="#fff" size="12"></u-icon>
+					</view>
+					<view v-if="hasLogin && show_amount_flag" slot="filterRight" @click="hiddenAmountReportFun">
+						<uni-icons v-if="!hiddenAmountReportFlag" color="#fff" type="eye" size="20"></uni-icons>
+						<uni-icons v-else color="#fff" type="eye-slash" size="20"></uni-icons>
+					</view>
+				</view>
+
+				<view class="flex_row" v-if="show_consumption_type_flag">
+					<view class="flex_row">
+						<view class="filter_types_item" :key="index" v-for="(item, index) in typeList">
+							<u-tag :text="item" :color="item == consumption_type? '#fff':'#666'"
+								:borderColor="item == consumption_type? '#fff':'#666'" :plain="item != consumption_type"
+								:name="item" @click="radioClick(item)">
+							</u-tag>
+						</view>
+					</view>
+				</view>
+			</view>
+
+			<uni-popup ref="showMonthAndYear" background-color="#f8f8f8" type="bottom">
+				<view class="types_edit_view">
+					<view class="edit_del" :style="{color:activeYearMonthType === '按月'?'#007AFF':'#000'}"
+						@click="selectMonthAndYear('按月')">
+						按月
+					</view>
+					<view class="edit_edit" :style="{color:activeYearMonthType === '按年'?'#007AFF':'#000'}"
+						@click="selectMonthAndYear('按年')">
+						按年
+					</view>
+					<view @click="closeModal('showMonthAndYear')" class="edit_close">
+						取消
+					</view>
+				</view>
+			</uni-popup>
+
+			<!-- 选择年份 -->
+			<uni-popup ref="showYear" background-color="#f8f8f8" type="bottom">
+				<view class="types_wrapper_view">
+					<view class="close_btn">
+						<view class="close_icon">
+							<u-icon name="close" size="20" @click="closeModal('showYear')"></u-icon>
+						</view>
+						<view>
+							请选择年
+						</view>
+					</view>
+					<scroll-view class="types_btns_view" :scroll-into-view="toView" scroll-y="true"
+						scroll-with-animation="true">
+						<popupBtn popupType="selectYear" @btnClickCb='yearChange' :listObj="monthListObj"
+							:activeType="activeMonth" :activeTypeFirst="activeYear">
+						</popupBtn>
+					</scroll-view>
+				</view>
+			</uni-popup>
+
+			<!-- 选择月份 -->
+			<uni-popup ref="showMonth" background-color="#f8f8f8" type="bottom">
+				<view class="types_wrapper_view">
+					<view class="close_btn">
+						<view class="close_icon">
+							<u-icon name="close" size="20" @click="closeModal('showMonth')"></u-icon>
+						</view>
+						<view>
+							请选择月份
+						</view>
+					</view>
+					<scroll-view class="types_btns_view" :scroll-into-view="toView" scroll-y="true"
+						scroll-with-animation="true">
+						<popupBtn popupType="selectMonth" @btnClickCb='monthChange' :listObj="monthListObj"
+							:activeType="activeMonth" :activeTypeFirst="activeYear">
+						</popupBtn>
+						<!-- <view id='id_bottom_report'></view> -->
+					</scroll-view>
+				</view>
+			</uni-popup>
+
+		</view>
+	</wrapperPage>
+</template>
+
+<script>
+	import {
+		store,
+		mutations
+	} from '@/uni_modules/uni-id-pages/common/store.js'
+	import dayjs from 'dayjs'
+	import selYearMonthType from "@/pages/components/reports/selYearMonthType"
+	const formatDe = "YYYY"
+	const formatDe1 = "YYYY-MM"
+	const y = dayjs().format("YYYY")
+	export default {
+		props: {
+			sel_year_month_type_props: {
+				type: String,
+				default: ''
+			},
+			active_year_month_props: {
+				type: String,
+				default: ''
+			},
+			show_type_flag: {
+				type: Boolean,
+				default: true
+			},
+			show_amount_flag: {
+				type: Boolean,
+				default: true
+			},
+			show_consumption_type_flag: {
+				type: Boolean,
+				default: true
+			},
+		},
+		components: {
+			selYearMonthType
+		},
+		computed: {
+			hiddenAmountReportFlag() {
+				return store.hiddenAmountReportFlag
+			},
+			hasLogin() {
+				return store.hasLogin
+			},
+			userInfo() {
+				return store.userInfo
+			}
+		},
+		data() {
+			return {
+				activeYearMonthType: '',
+				monthListObj: {},
+				activeYearMonth: '',
+				activeMonth: '',
+				activeYear: '',
+				consumption_type: '支出',
+				typeList: [
+					'支出', '收入'
+				],
+			}
+		},
+		watch: {
+			sel_year_month_type_props: {
+				handler(newVal, oldVal) {
+					if (newVal && newVal != oldVal) {
+						if (this.sel_year_month_type_props === '按年') {
+							let monthArr = []
+							for (var i = y; i >= 2022; i--) {
+								if (!this.monthListObj['2022']) {
+									monthArr.push({
+										type: i,
+										label: i + '年',
+										value: i
+									})
+								}
+							}
+							this.monthListObj['2022'] = monthArr
+						}
+						if (this.sel_year_month_type_props === '按月') {
+							for (var i = y; i >= 2022; i--) {
+								if (!this.monthListObj[i + '年']) {
+									let monthArr = []
+									for (var j = 0; j < 12; j++) {
+										monthArr.push({
+											type: i,
+											label: (j + 1) + '月',
+											value: j + 1
+										})
+									}
+									this.monthListObj[i + '年'] = monthArr
+								}
+							}
+						}
+						this.activeYearMonthType = newVal
+					}
+				},
+				immediate: true
+			},
+			active_year_month_props: {
+				handler(newVal, oldVal) {
+					console.log(1111, newVal, oldVal, this.active_year_month_props);
+					if (newVal) {
+						this.activeYearMonth = newVal
+					} else {
+						if (this.sel_year_month_type_props === '按年') {
+							this.activeYearMonth = dayjs().format(formatDe)
+						}
+						if (this.sel_year_month_type_props === '按月') {
+							this.activeYearMonth = dayjs().format(formatDe1)
+						}
+					}
+				},
+				immediate: true,
+				deep: true
+			},
+		},
+		created() {
+
+			// if (this.active_year_month_props) {
+			// 	this.activeYearMonth = this.active_year_month_props
+			// } else {
+			// 	if (this.sel_year_month_type_props === '按年') {
+			// 		this.activeYearMonth = dayjs().format(formatDe)
+			// 	}
+			// 	if (this.sel_year_month_type_props === '按月') {
+			// 		this.activeYearMonth = dayjs().format(formatDe1)
+			// 	}
+			// }
+			// if (this.sel_year_month_type_props) {
+			// 	this.activeYearMonthType = this.sel_year_month_type_props
+			// }
+			// this.initData()
+		},
+		methods: {
+			initData() {
+				console.log('this.activeYearMonth', this.activeYearMonth, this.active_year_month_props);
+				let d = dayjs(this.activeYearMonth)
+				console.log('this.activeYearMonthType', this.activeYearMonth, this.activeYearMonthType);
+				if (this.activeYearMonthType === '按年') {
+					d = d.format(formatDe)
+				}
+				if (this.activeYearMonthType === '按月') {
+					d = d.format(formatDe1)
+				}
+				uni.$emit("selYearMonthTypeChange", {
+					typeVal: this.activeYearMonthType,
+					activeYearMonth: d,
+					consumption_type: this.consumption_type
+				})
+			},
+			hiddenAmountReportFun() {
+				mutations.setHiddenAmountReportFlagStore(!this.hiddenAmountReportFlag)
+			},
+			radioClick(val) {
+				this.consumption_type = val
+				this.$nextTick(() => {
+					this.initData()
+				})
+			},
+			yearFilterShow() {
+				this.activeMonth = this.activeYearMonth + '年'
+				this.activeYear = this.activeYearMonth
+				this.showModal('showYear')
+			},
+			monthFilterShow() {
+				this.activeYear = this.activeYearMonth && this.activeYearMonth.slice(0, 4)
+				this.activeMonth = this.activeYearMonth && (this.activeYearMonth.slice(5, 7) * 1) + '月'
+				this.showModal('showMonth')
+			},
+			yearChange({
+				item
+			} = obj) {
+				this.activeYearMonth = `${item.type}`
+				this.closeModal('showYear')
+				this.$nextTick(() => {
+					this.initData()
+				})
+			},
+			monthChange({
+				item
+			} = obj) {
+				this.activeTypeFirst = item.type
+				let m = item.value < 10 ? '0' + item.value : item.value
+				this.activeYearMonth = `${item.type}-${m}`
+				this.closeModal('showMonth')
+				this.$nextTick(() => {
+					this.initData()
+				})
+			},
+			dateFilterShow() {
+				this.showModal('showMonthAndYear')
+			},
+			selectMonthAndYear(type) {
+				this.activeYearMonthType = type
+				this.closeModal('showMonthAndYear')
+				this.$nextTick(() => {
+					this.initData()
+				})
+			},
+			showModal(typePopup) {
+				this.$refs[typePopup].open()
+			},
+			closeModal(typePopup) {
+				this.$refs[typePopup].close()
+			}
+		}
+	};
+</script>
+
+<style lang="scss" scoped>
+</style>

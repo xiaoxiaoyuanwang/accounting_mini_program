@@ -1,0 +1,70 @@
+<template>
+	<view>
+		<reportsMonth ref="reportsMonth" isMonth='isMonth' :consumption_type_props="consumption_type"
+			:active_year_month_props="activeYearMonth">
+		</reportsMonth>
+	</view>
+</template>
+
+<script>
+	import {
+		store
+	} from '@/uni_modules/uni-id-pages/common/store.js'
+	import dayjs from 'dayjs'
+	import reportsMonth from "@/pages/components/reports/reportsMonth"
+	const formatDe = "YYYY-MM"
+	export default {
+		components: {
+			reportsMonth
+		},
+		data() {
+			return {
+				activeYearMonth: '',
+				consumption_type: '支出'
+			}
+		},
+		computed: {
+			hasLogin() {
+				return store.hasLogin
+			}
+		},
+		onShow() {
+			// this.initData()
+		},
+		onLoad(option) {
+			if (option.activeYearMonth) {
+				this.activeYearMonth = option.activeYearMonth
+			} else {
+				this.activeYearMonth = dayjs().format(formatDe)
+			}
+			if (option.consumption_type) {
+				this.consumption_type = option.consumption_type
+			}
+		},
+		mounted() {
+			this.initData()
+		},
+		onPullDownRefresh() {
+			if (!this.hasLogin) {
+				uni.stopPullDownRefresh()
+				return
+			}
+			this.initData()
+		},
+		methods: {
+			initData() {
+				this.$nextTick(() => {
+					if (!this.activeYearMonth) {
+						return
+					}
+					this.$refs.reportsMonth && this.$refs.reportsMonth.initData()
+					uni.stopPullDownRefresh()
+				})
+			},
+		}
+	};
+</script>
+
+<style lang="scss" scoped>
+
+</style>

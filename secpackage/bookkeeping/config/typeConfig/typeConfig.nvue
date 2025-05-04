@@ -1,0 +1,633 @@
+<template>
+	<view class="type_container">
+		<view>
+			<view class="type_title">
+				<view>
+					<text style="font-size: 36rpx;text-align: center;">
+						分类管理
+					</text>
+					<view class="flex_row">
+						<text class="tip_text">
+							轻点编辑
+						</text>
+						<!-- #ifdef MP-WEIXIN -->
+						<text class="tip_text">
+							，长按拖动可排序
+						</text>
+						<!-- #endif -->
+						<!-- #ifdef MP-ALIPAY -->
+						<text class="tip_text">
+							，微信拖动可排序
+						</text>
+						<!-- #endif -->
+					</view>
+
+				</view>
+			</view>
+
+			<view>
+				<view class="types_first">
+					<view class="types_first_item" :key="index" v-for="(item,key, index) in typeListObj">
+						<u-tag :text="key" :plain="key != consumption_type" :name="key" @click="radioClick(key)">
+						</u-tag>
+					</view>
+				</view>
+
+				<view class="rowWrap item_box2">
+					<basicDrag v-model="typeFilterList" @endDrag="endDrag" @clickItem="typeClick"
+						wrapperMaxHeight="calc(100vh - 420rpx)" width="335" itemKey="_id" dragType="type"
+						itemHeight="80px" :column="4">
+					</basicDrag>
+					<!-- <view class="colWrap" v-for="(item, idx) in typeFilterList" :key="idx">
+						<u-button :plain="true" @click="typeClick(item, idx)" :customStyle="{...customStyleTypes}">
+							<view class="img_item_btn">
+								<text class="iconfont" style="font-size: 50rpx;height: 50rpx;margin-top: 10rpx;"
+									:class="item.icon_class"></text>
+								<text class="colItemLabel">
+									{{item.label}}
+								</text>
+								<text v-if="!item.is_disabled" class="edit_tip">
+									轻点编辑
+								</text>
+								<text v-else class="edit_tip">
+								</text>
+							</view>
+						</u-button>
+					</view> -->
+					<!-- <view class="colWrap">
+						<u-button :plain="true" @click="typeClick('', '添加')" :customStyle="{...customStyleTypes}">
+							<view class="img_item_btn">
+								<view style="margin-top: 10rpx;">
+									<u-icon name="plus-circle" color="#007aff" size="25"></u-icon>
+								</view>
+								<text class="colItemLabel">
+									添加分类
+								</text>
+								<text class="edit_tip">
+								</text>
+							</view>
+						</u-button>
+					</view> -->
+				</view>
+			</view>
+		</view>
+		<view class="add" style="bottom: 200rpx" @click="typeClick('', '添加')">
+			<u-button :customStyle="{boxShadow: '0 2rpx 8rpx 4rpx rgba(0, 122, 255, .3)',border: 'none'}"
+				color="#007aff" :plain="true" shape="circle" icon="plus" text="添加分类"></u-button>
+		</view>
+		<uni-popup ref="showEditType" background-color="#f8f8f8" type="bottom">
+			<view class="types_edit_view">
+				<view class="edit_del" @click="delTypes">
+					删除
+				</view>
+				<view @click="editTypes" class="edit_edit">
+					修改
+				</view>
+				<view @click="closeModal('showEditType')" class="edit_close">
+					取消
+				</view>
+			</view>
+		</uni-popup>
+
+		<uni-popup ref="showPopupFlag" background-color="#f8f8f8" type="bottom">
+			<view class="type_wrapper">
+				<view class="close_btn">
+					<view class="close_icon">
+						<u-icon name="close" size="20" @click="closeModal('showPopupFlag')"></u-icon>
+					</view>
+					<view>
+						{{editTitle}}
+					</view>
+				</view>
+				<view class="pb20 flex_row flex_align_center">
+					<text class="iconfont colItemImg" :style="[comColor(activeItem.icon_color,'color')]"
+						:class="activeItem.icon_class" @click="changeImg"></text>
+					<view @click="openColor" class="ml10 img_color"
+						:style="[comColor(activeItem.icon_color,'background')]">
+					</view>
+				</view>
+				<input @confirm="confirmPopupType" class="inputWrapper" cursor-spacing="140" placeholder="不能与已有的分类名重复"
+					maxlength="4" border="surround" v-model="consumption_label" />
+				<view class="num_length_tip">{{(consumption_label && consumption_label.length)||0}}/4</view>
+				<view class="type_btn">
+					<view style="width: 50%;">
+						<u-button type="primary" text="确定" @click="confirmPopupType"></u-button>
+					</view>
+				</view>
+			</view>
+		</uni-popup>
+		<uni-popup ref="showPopupImgFlag" background-color="#fff" type="bottom">
+			<view class="types_wrapper_view">
+				<view class="close_btn">
+					<view class="close_icon">
+						<u-icon name="close" size="20" @click="closeModal('showPopupImgFlag')"></u-icon>
+					</view>
+					<view>
+						选择图标
+					</view>
+				</view>
+				<view class="flex_row types_btns_view" style="flex-wrap: wrap;">
+					<view class="colWrap" style="margin: 0;" v-for="(item, idx) in typeIcons" :key="idx">
+						<u-button :plain="true" @click="typeImgClick(item, idx)"
+							:customStyle="{...customStyleTypes,color: idx == activeType? '#007aff':'',backgroundColor: idx == activeType? '#dedede':''}">
+							<view class="img_item_btn">
+								<text class="iconfont" style="font-size: 40rpx;" :class="item"></text>
+							</view>
+						</u-button>
+					</view>
+				</view>
+
+			</view>
+		</uni-popup>
+		<t-color-picker ref="colorPicker" :color="activeItem.icon_color" @confirm="confirm"></t-color-picker>
+	</view>
+</template>
+
+<script>
+	import {
+		store,
+		mutations
+	} from '@/uni_modules/uni-id-pages/common/store'
+	import basicDrag from '@/secpackage/components/basic-drag'
+	import tColorPicker from '@/secpackage/components/t-color-picker/t-color-picker'
+	import dayjs from 'dayjs'
+	import {
+		typeIcons
+	} from "@/secpackage/bookkeeping/config/configData"
+	const db = uniCloud.database()
+	const db2 = uniCloud.databaseForJQL()
+	const dbcmd = db.command
+	const xm_consumption_types = 'xm-consumption-types'
+	export default {
+		components: {
+			basicDrag,
+			tColorPicker
+		},
+		data() {
+			return {
+				typeIcons,
+				activeType: 0,
+				imgItemColor: {
+					r: 0,
+					g: 122,
+					b: 255,
+					a: 1
+				},
+				typeListObj: {},
+				consumption_type: '',
+				typeFilterList: [],
+				customStyleTypes: {
+					border: 'none',
+					color: '#007aff',
+					height: '140rpx',
+					fontSize: '24rpx',
+					padding: 0
+				},
+				activeItem: {},
+				consumption_label: '',
+				editTitle: '添加分类'
+			}
+		},
+		computed: {
+			hasLogin() {
+				return store.hasLogin
+			},
+			comColor() {
+				return (valObj, key) => {
+					if (valObj) {
+						let c = `rgba(${valObj.r},${valObj.g},${valObj.b},${valObj.a})`
+						return {
+							[key]: c
+						}
+					} else {
+						return {}
+					}
+				}
+			},
+		},
+		onLoad() {
+			this.getTypes()
+		},
+		onPullDownRefresh() {
+			this.getTypes()
+		},
+		watch: {
+			consumption_type: {
+				handler(newVal, oldVal) {
+					if (newVal !== oldVal) {
+						let ls = this.typeListObj[newVal] || []
+						let lsNoOrder = ls.filter(item => {
+							return item.order === undefined || item.order === ''
+						})
+						let lsHasOrder = ls.filter(item => {
+							return item.order !== undefined && item.order !== ''
+						})
+						this.typeFilterList = [...lsHasOrder, ...lsNoOrder]
+					}
+				},
+				immediate: true
+			},
+			typeListObj: {
+				handler(newVal, oldVal) {
+					if (JSON.stringify(newVal) !== JSON.stringify(oldVal)) {
+						let ls = newVal[this.consumption_type] || []
+						let lsNoOrder = ls.filter(item => {
+							return item.order === undefined || item.order === ''
+						})
+						let lsHasOrder = ls.filter(item => {
+							return item.order !== undefined && item.order !== ''
+						})
+						this.typeFilterList = [...lsHasOrder, ...lsNoOrder]
+					}
+				},
+				immediate: true,
+				deep: true
+			},
+		},
+		methods: {
+			openColor(item) {
+				// 打开颜色选择器
+				this.$refs.colorPicker.open();
+			},
+			confirm(e) {
+				this.activeItem.icon_color = e.rgba
+			},
+			endDrag(ls) {
+				for (let i = 0; i < ls.length; i++) {
+					let items = ls[i]
+					let it = {
+						order: i + 1,
+						last_modify_date: dayjs().valueOf()
+					}
+					if (i === 0) {
+						uni.showLoading({
+							title: '排序中'
+						})
+					}
+					db.collection(xm_consumption_types).doc(items._id).update(it).then(res => {
+						if (i === ls.length - 1) {
+							uni.$emit('updateTypeList')
+							uni.showToast({
+								title: '排序成功'
+							});
+							this.getTypes(1)
+						}
+					}).catch(err => {
+						let str = '集合xm-consumption-types内索引user_id/type/冲突'
+						if (err.errMsg.indexOf(str) !== -1) {
+							str = '不能与已有的分类名重复！'
+						} else {
+							str = JSON.stringify(err)
+						}
+						if (i === ls.length - 1) {
+							uni.showModal({
+								title: '排序失败',
+								icon: 'error',
+								content: str,
+								showCancel: false
+							})
+						}
+					}).finally(() => {
+						if (i === ls.length - 1) {
+							uni.hideLoading()
+						}
+					})
+				}
+			},
+			getTypes(type) {
+				if (!this.hasLogin) {
+					return
+				}
+				uni.showLoading({
+					title: '加载中'
+				})
+				db2.collection(xm_consumption_types).where({
+						user_id: db.getCloudEnv('$cloudEnv_uid')
+					}).orderBy('order asc')
+					.limit(100).get().then(res => {
+						let typeData = res.data
+						for (let i = 0; i < typeData.length; i++) {
+							let item = typeData[i]
+							if (item.order === 0 || item.order >= 0) {
+								// 有排序，返回label
+								this.maxOrderNum = item.order
+							}
+						}
+						if (this.maxOrderNum) {
+							this.maxOrderNum = this.maxOrderNum + 1
+						} else {
+							this.maxOrderNum = typeData.length + 1
+						}
+						mutations.setTypeListStore(typeData)
+						this.initTypesData(typeData)
+						if (!type) {
+							this.consumption_type = "支出"
+						}
+					}).finally(() => {
+						uni.hideLoading()
+						uni.stopPullDownRefresh()
+					})
+			},
+			// 处理type格式
+			initTypesData(typeData) {
+				let typeObj = {
+					"支出": [],
+					"收入": [],
+					"不计": []
+				}
+				// 存在order的数据
+				let typeObj1 = {
+					"支出": [],
+					"收入": [],
+					"不计": []
+				}
+				// 不存在order的数据
+				let typeObj2 = {
+					"支出": [],
+					"收入": [],
+					"不计": []
+				}
+				typeData.forEach(item => {
+					if (item.order === undefined || item.order === '') {
+						if (!typeObj2[item.type]) {
+							typeObj2[item.type] = []
+						}
+						typeObj2[item.type].push(item)
+					} else {
+						if (!typeObj1[item.type]) {
+							typeObj1[item.type] = []
+						}
+						typeObj1[item.type].push(item)
+					}
+				})
+				typeObj["支出"] = [...typeObj2["支出"], ...typeObj1["支出"]]
+				typeObj["收入"] = [...typeObj2["收入"], ...typeObj1["收入"]]
+				typeObj["不计"] = [...typeObj2["不计"], ...typeObj1["不计"]]
+				this.typeListObj = typeObj
+			},
+			showModal(typePopup) {
+				this.$refs[typePopup] && this.$refs[typePopup].open()
+			},
+			closeModal(typePopup) {
+				this.$refs[typePopup] && this.$refs[typePopup].close()
+			},
+			confirmPopupType() {
+				if (!this.consumption_type || !this.consumption_label) {
+					uni.showModal({
+						title: '提示',
+						icon: 'error',
+						content: '请选择分类',
+						showCancel: false
+					});
+					return
+				}
+				if (this.editTitle == "编辑分类") {
+					let typeData = {
+						icon_class: this.activeItem.icon_class,
+						icon_color: this.activeItem.icon_color,
+						type: this.consumption_type,
+						label: this.consumption_label,
+						last_modify_date: dayjs().valueOf(),
+						is_disabled: false
+					}
+					uni.showLoading({
+						title: '修改中'
+					})
+					db.collection(xm_consumption_types).doc(this.activeItem._id).update(typeData).then(res => {
+						this.closeModal('showPopupFlag')
+						uni.showToast({
+							title: '修改成功'
+						})
+						uni.$emit('updateTypeList')
+						this.consumption_label = ''
+						this.getTypes(1)
+					}).catch(err => {
+						let str = '集合xm-consumption-types内索引user_id/type/冲突'
+						if (err.errMsg.indexOf(str) !== -1) {
+							str = '不能与已有的分类名重复！'
+						} else {
+							str = JSON.stringify(err)
+						}
+						uni.showModal({
+							title: '修改失败',
+							icon: 'error',
+							content: str,
+							showCancel: false
+						})
+					}).finally(() => {
+						uni.hideLoading()
+					})
+				} else {
+					let typeData = [{
+						icon_class: this.activeItem.icon_class,
+						icon_color: this.activeItem.icon_color,
+						type: this.consumption_type,
+						label: this.consumption_label,
+						order: this.maxOrderNum
+					}]
+					uni.showLoading({
+						title: '添加中'
+					})
+					db.collection(xm_consumption_types).add(typeData).then(res => {
+						this.closeModal('showPopupFlag')
+						uni.showToast({
+							title: '添加成功'
+						})
+						uni.$emit('updateTypeList')
+						this.consumption_label = ''
+						this.getTypes(1)
+					}).catch(err => {
+						let str = "Cannot read properties of null"
+						if (err.errMsg.indexOf(str) !== -1) {
+							str = '不能与已有的分类名重复！'
+						} else {
+							str = JSON.stringify(err)
+						}
+						uni.showModal({
+							title: '添加失败',
+							icon: 'error',
+							content: str,
+							showCancel: false
+						})
+					}).finally(() => {
+						uni.hideLoading()
+					})
+				}
+			},
+			delTypes() {
+				this.closeModal('showEditType')
+				uni.showModal({
+					title: '删除',
+					content: '确定要删除该条数据吗？',
+					success: (res) => {
+						if (res.confirm) {
+							uni.showLoading({
+								title: '删除中'
+							})
+							db.collection(xm_consumption_types).doc(this.activeItem._id).remove().then(() => {
+								uni.$emit('updateTypeList')
+								this.getTypes(1)
+							}).catch(err => {
+								uni.showModal({
+									title: '删除失败',
+									icon: 'error',
+									content: JSON.stringify(err),
+									showCancel: false
+								});
+							}).finally(() => {
+								uni.hideLoading()
+							})
+						} else if (res.cancel) {}
+					}
+				});
+			},
+			editTypes() {
+				this.editTitle = "编辑分类"
+				this.consumption_label = this.activeItem.label
+				this.closeModal('showEditType')
+				this.showModal('showPopupFlag')
+			},
+			changeImg() {
+				this.activeType = this.typeIcons.findIndex(item => {
+					return item === this.activeItem.icon_class;
+				})
+				this.showModal('showPopupImgFlag')
+			},
+			typeImgClick(item, idx) {
+				this.activeType = idx
+				this.activeItem.icon_class = item
+				this.closeModal('showPopupImgFlag')
+			},
+			typeClick(item, idx) {
+				if (idx == '添加') {
+					this.editTitle = "添加分类"
+					this.showModal('showPopupFlag')
+					this.activeItem = {
+						icon_class: 'icon-zhangdan',
+						icon_color: this.imgItemColor
+					}
+					this.consumption_label = ''
+				} else {
+					if (!item.icon_color) {
+						item.icon_color = this.imgItemColor
+					}
+					this.activeItem = JSON.parse(JSON.stringify(item))
+					// if (!item.is_disabled) {
+					this.showModal('showEditType')
+					// }
+				}
+			},
+			radioClick(key) {
+				this.consumption_type = key
+			}
+		}
+	}
+</script>
+
+
+<style lang="scss">
+	.type_container {
+		padding: 60rpx 40rpx;
+		background: #fff;
+		min-height: 100vh;
+
+		.type_title {
+			margin-bottom: 40rpx;
+			padding-bottom: 40rpx;
+			border-bottom: 2rpx solid #ccc;
+			position: relative;
+			font-size: 36rpx;
+			flex-direction: row;
+			justify-content: center;
+		}
+
+		.types_first {
+			flex-direction: row;
+		}
+
+		.types_first_item:not(:last-child) {
+			margin-right: 40rpx;
+		}
+
+		.img_item_btn {
+			align-items: center;
+		}
+
+		.edit_tip {
+			color: #ccc;
+			height: 32rpx;
+		}
+
+		.edit_del {
+			padding: 40rpx;
+			color: #fa3534;
+			text-align: center;
+			border-bottom: 2rpx solid #ccc;
+			font-size: 32rpx;
+			background-color: #fff;
+		}
+
+		.edit_edit {
+			padding: 40rpx;
+			text-align: center;
+			font-size: 32rpx;
+			background-color: #fff;
+		}
+
+		.edit_close {
+			padding: 40rpx;
+			text-align: center;
+			font-size: 32rpx;
+			margin-top: 20rpx;
+			background-color: #fff;
+		}
+
+		.type_btn {
+			padding-top: 60rpx;
+			padding-bottom: 60rpx;
+			flex-direction: row;
+			justify-content: space-around;
+		}
+
+		.type_wrapper {
+			padding: 40rpx;
+		}
+
+		.type_tip {
+			padding-bottom: 40rpx;
+			align-items: center;
+			font-size: 40rpx;
+		}
+
+		.rowWrap {
+			margin: 20rpx 0;
+			flex-wrap: wrap;
+			flex-direction: row;
+		}
+
+		.colWrap {
+			margin: 0 0 20rpx 0;
+			flex-wrap: wrap;
+			width: 25%;
+			align-items: center;
+			justify-content: center;
+			align-content: center;
+		}
+
+		.colItemLabel {
+			padding: 10rpx 0;
+		}
+
+		.item_box {
+			max-height: calc(100vh - 420rpx);
+			overflow: auto;
+		}
+
+		.img_color {
+			height: 50rpx;
+			width: 50rpx;
+			border-radius: 10rpx;
+			background: #007aff;
+		}
+	}
+</style>

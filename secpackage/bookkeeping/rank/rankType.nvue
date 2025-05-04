@@ -1,0 +1,243 @@
+<template>
+	<wrapperPage>
+		<view class="rank_container">
+			<view class="filter_top">
+				<view class="filter_box2">
+					<view class="flex_row algin_c flex_justify_between">
+						<text v-if="activeYearMonthType === '按月'" class="filter_date filter_date2">
+							{{activeYearMonth|formatData('M月')}}{{consumption_type}}排行榜
+						</text>
+						<text v-if="activeYearMonthType === '按年'" class="filter_date filter_date2">
+							{{activeYearMonth|formatData('YYYY年')}}{{consumption_type}}排行榜
+						</text>
+						<view class="flex_row colorF">
+							<text>{{consumption_label}}</text>
+						</view>
+					</view>
+
+				</view>
+			</view>
+
+			<scroll-view class="contain_wrapper" :scroll-top="scrollTop" scroll-y="true" @scrolltolower="lowerFun">
+				<view>
+					<view class="list_container">
+						<template v-if="rankList.length > 0">
+							<ListItem itemType="rankType" :hiddenAmountFlag="hiddenAmountReportFlag"
+								:itemData="rankList">
+								<view slot="bottom">
+									<loadAllData v-if="isAll"></loadAllData>
+								</view>
+							</ListItem>
+						</template>
+						<template v-else>
+							<view v-if="countNum === null">
+								<u-skeleton rows='5' rowsHeight='30' :loading="true" :animate="true"></u-skeleton>
+							</view>
+							<view style="padding-top: 160rpx;" v-else>
+								<u-empty>
+								</u-empty>
+							</view>
+						</template>
+					</view>
+				</view>
+			</scroll-view>
+
+		</view>
+	</wrapperPage>
+</template>
+
+<script>
+	import {
+		store
+	} from '@/uni_modules/uni-id-pages/common/store.js'
+	import ListItem from "@/secpackage/components/ListItem/ListItem"
+	const db = uniCloud.database()
+	const db2 = uniCloud.databaseForJQL()
+	const dbcmd = db.command
+	const xm_consumption_pages = 'xm-consumption-pages'
+	export default {
+		components: {
+			ListItem
+		},
+		data() {
+			return {
+				activeYearMonthType: '',
+				scrollTop: 0,
+				activeYearMonth: '',
+				consumption_type: '',
+				consumption_label: '',
+				activeRankTypes: '金额',
+				rankList: [],
+				limitNum: 20,
+				countNum: null
+			}
+		},
+		computed: {
+			isAll() {
+				return this.countNum !== null && this.rankList.length >= this.countNum
+			},
+			hiddenAmountReportFlag() {
+				return store.hiddenAmountReportFlag
+			},
+			hasLogin() {
+				return store.hasLogin
+			},
+			getAmountFormat() {
+				return (num, type) => {
+					if (this.hiddenAmountReportFlag) {
+						return '*****'
+					} else {
+						let formatAmount = this.$options.filters['formatAmount']
+						let changeToThousand = this.$options.filters['changeToThousand']
+						if (type) {
+							return changeToThousand(formatAmount(num), type)
+						} else {
+							return changeToThousand(formatAmount(num))
+						}
+					}
+				}
+			},
+			getAmountNumFormat() {
+				return (num) => {
+					if (this.hiddenAmountReportFlag) {
+						return '***'
+					} else {
+						return num
+					}
+				}
+			},
+		},
+		onPullDownRefresh() {
+			if (!this.hasLogin) {
+				uni.stopPullDownRefresh()
+				return
+			}
+			this.initData()
+		},
+		mounted() {
+			uni.$on('rankType', () => {
+				this.initData()
+			})
+		},
+		onLoad(option) {
+			if (option.activeYearMonthType) {
+				this.activeYearMonthType = option.activeYearMonthType
+			}
+			if (option.activeYearMonth) {
+				this.activeYearMonth = option.activeYearMonth
+			}
+			if (option.consumption_type) {
+				this.consumption_type = option.consumption_type
+			}
+			if (option.consumption_label) {
+				this.consumption_label = option.consumption_label
+			}
+			this.initData()
+		},
+		onPullDownRefresh() {
+			if (!this.hasLogin) {
+				uni.stopPullDownRefresh()
+				return
+			}
+			this.initData()
+		},
+		methods: {
+			initData() {
+				if (!this.hasLogin) {
+					return
+				}
+				uni.stopPullDownRefresh()
+				this.getMonthRankData(0)
+			},
+			// 滑动到底部
+			lowerFun() {
+				if (!this.getDataFlag) {
+					this.getMonthRankData()
+				}
+			},
+			getMonthRankData(n) {
+				if (!this.hasLogin) {
+					this.countNum = 0
+					return
+				}
+				if (!this.activeYearMonth || !this.hasLogin) {
+					this.rankList = []
+					return
+				}
+				this.getDataFlag = true
+				let skipLen = this.rankList.length
+				if (n === 0) {
+					skipLen = 0
+					this.rankList = []
+					this.countNum = null
+				}
+				if (this.countNum !== null && this.rankList.length >= this.countNum) {
+					return
+				}
+				let str = "user_id==$cloudEnv_uid"
+				if (this.consumption_type) {
+					str = str + "&&consumption_type=='" + this.consumption_type + "'"
+				}
+				if (this.consumption_label) {
+					str = str + "&&consumption_label=='" + this.consumption_label + "'"
+				}
+				if (this.activeYearMonthType === '按月') {
+					str = `${str}&&substr(consumption_date, 0, 7) == ${JSON.stringify(this.activeYearMonth)}`
+				}
+
+				if (this.activeYearMonthType === '按年') {
+					str = `${str}&&substr(consumption_date, 0, 4) == ${JSON.stringify(this.activeYearMonth.slice(0, 4))}`
+				}
+				uni.showLoading({
+					title: '加载中'
+				})
+				console.log('rank_type_pages: ', str);
+				if (this.activeRankTypes == '金额') {
+					db2.collection(xm_consumption_pages).where(
+							str)
+						.orderBy("consumption_amount desc, consumption_date desc")
+						.skip(skipLen).limit(this.limitNum)
+						.get({
+							getCount: true
+						}).then(res => {
+							let data = res.data
+							this.countNum = res.count
+							if (n === 0) {
+								this.rankList = []
+								this.$nextTick(() => {
+									this.scrollTop = 0
+								});
+							}
+							let allData = this.rankList.concat(data)
+							this.rankList = allData
+						}).finally(() => {
+							uni.hideLoading()
+							uni.stopPullDownRefresh()
+							this.getDataFlag = false
+						})
+				}
+			},
+		}
+	};
+</script>
+
+<style lang="scss" scoped>
+	/* 请根据实际需求修改父元素尺寸，组件自动识别宽高 */
+	.rank_container {
+
+		.contain_wrapper {
+			height: calc(100vh - 120rpx);
+		}
+
+		.filter_date2 {
+			font-size: 32rpx;
+		}
+
+		.title_view {
+			padding: 40rpx 0;
+			font-size: 32rpx;
+			justify-content: space-between;
+			align-items: center;
+		}
+	}
+</style>

@@ -1,0 +1,515 @@
+<template>
+	<wrapperPage>
+		<view class="year_container">
+			<view class="filter_top">
+				<view class="filter_box">
+					<view class="flex_row algin_c">
+						<slot name="filter"></slot>
+						<view class="filter_container" @click="yearFilterShow">
+							<text class="filter_date" style="line-height: 52rpx;">
+								{{activeYearMonth|formatData('YYYY年')}}
+							</text>
+							<u-icon name="arrow-down-fill" color="#fff" size="12"></u-icon>
+						</view>
+						<slot name="filterRight"></slot>
+					</view>
+				</view>
+
+				<view class="summary_all_box flex_row">
+					<view style="width: 50%;">
+						<view class="summary_all_title">
+							<text>共支出</text>
+						</view>
+						<view class="summary_all_num">
+							<text>￥{{getAmountFormat(getYearTotalAmont(0), 1)}}</text>
+						</view>
+					</view>
+					<view style="width: 50%;">
+						<view class="summary_all_title">
+							<text>共收入</text>
+						</view>
+						<view class="summary_all_num">
+							<text>￥{{getAmountFormat(getYearTotalAmont(1), 1)}}</text>
+						</view>
+					</view>
+				</view>
+			</view>
+
+			<scroll-view class="contain_wrapper" scroll-y="true">
+				<view class="img_wrapper" v-for="(item,index) in 12" :key="index">
+					<!-- 小熊 -->
+					<view v-if="imgType==='m'" @click="gotoMonthRank(12-index)" class="img_view img_box" :style="{backgroundImage: imgType?`url(${baseUrl}/year_bg/${imgType}_${12-index}.png)`:
+					`radial-gradient(circle,rgba(2, 122, 255, 0.4), rgba(2, 122, 255, 0.2))`}">
+						<view class="text_view">
+							<view class="month_view">
+								{{activeYearMonth|formatData('YYYY年')}}{{12-index}}月
+							</view>
+
+							<view class="flex_row">
+								<view class="t_view overflowE">
+									<view class="flex_row">
+										<text>支出：￥</text>
+										<text>{{getAmountFormat((getTotalAmont(12-index, 0) && getTotalAmont(12-index, 0).consumption_amount)||0, 1)}}</text>
+									</view>
+									<view class="flex_row pt5">
+										<text>共：</text>
+										<text>{{getAmountNumFormat((getTotalAmont(12-index, 0) && getTotalAmont(12-index, 0).countNum)||0)}}笔</text>
+									</view>
+								</view>
+
+								<view class="t_view overflowE">
+									<view class="flex_row">
+										<text>收入：￥</text>
+										<text>{{getAmountFormat((getTotalAmont(12-index, 1) && getTotalAmont(12-index, 1).consumption_amount)||0, 1)}}</text>
+									</view>
+									<view class="flex_row pt5">
+										<text>共：</text>
+										<text>{{getAmountNumFormat((getTotalAmont(12-index, 1) && getTotalAmont(12-index, 1).countNum)||0)}}笔</text>
+									</view>
+								</view>
+							</view>
+						</view>
+					</view>
+					<!-- 数字 -->
+					<view v-if="imgType==='month'" @click="gotoMonthRank(12-index)" class="img_view2 img_box" :style="{backgroundImage: imgType?`url(${baseUrl}/year_bg/${imgType}_${12-index}.png)`:
+					`radial-gradient(circle,rgba(2, 122, 255, 0.4), rgba(2, 122, 255, 0.2))`}">
+						<view class="text_view flex_row flex_align_center flex_justify_between">
+							<view>
+								<view class="month_view">
+									{{activeYearMonth|formatData('YYYY年')}}{{12-index}}月
+								</view>
+								<view class="flex_row">
+									<view class="t_view2 overflowE">
+										<view class="flex_row">
+											<text>支出：￥</text>
+											<text>{{getAmountFormat((getTotalAmont(12-index, 0) && getTotalAmont(12-index, 0).consumption_amount)||0, 1)}}</text>
+										</view>
+										<view class="flex_row">
+											<text>共：</text>
+											<text>{{getAmountNumFormat((getTotalAmont(12-index, 0) && getTotalAmont(12-index, 0).countNum)||0)}}笔</text>
+										</view>
+
+										<view class="flex_row pt10">
+											<text>收入：￥</text>
+											<text>{{getAmountFormat((getTotalAmont(12-index, 1) && getTotalAmont(12-index, 1).consumption_amount)||0, 1)}}</text>
+										</view>
+										<view class="flex_row">
+											<text>共：</text>
+											<text>{{getAmountNumFormat((getTotalAmont(12-index, 1) && getTotalAmont(12-index, 1).countNum)||0)}}笔</text>
+										</view>
+
+									</view>
+								</view>
+
+							</view>
+
+							<view class="right_icon flex_align_center flex_justify_center">
+								<uni-icons type="right" color="#f86112" size="20"></uni-icons>
+							</view>
+
+						</view>
+					</view>
+
+					<!-- 背景颜色 -->
+					<view v-if="imgType==='num'" @click="gotoMonthRank(12-index)"
+						:class="'img_view img_box ' + 'img_bg_'+index">
+						<view :class="'img_position_num ' + 'img_position_num_'+index">
+							{{12-index}}
+						</view>
+						<view class="flex_row flex_align_center flex_justify_between">
+							<view class="text_view" style="flex: 1;">
+								<view class="month_view">
+									{{activeYearMonth|formatData('YYYY年')}}{{12-index}}月
+								</view>
+
+								<view class="flex_row">
+									<view class="t_view overflowE">
+										<view class="flex_row">
+											<text>支出：￥</text>
+											<text>{{getAmountFormat((getTotalAmont(12-index, 0) && getTotalAmont(12-index, 0).consumption_amount)||0, 1)}}</text>
+										</view>
+										<view class="flex_row pt5">
+											<text>共：</text>
+											<text>{{getAmountNumFormat((getTotalAmont(12-index, 0) && getTotalAmont(12-index, 0).countNum)||0)}}笔</text>
+										</view>
+									</view>
+
+									<view class="t_view overflowE">
+										<view class="flex_row">
+											<text>收入：￥</text>
+											<text>{{getAmountFormat((getTotalAmont(12-index, 1) && getTotalAmont(12-index, 1).consumption_amount)||0, 1)}}</text>
+										</view>
+										<view class="flex_row pt5">
+											<text>共：</text>
+											<text>{{getAmountNumFormat((getTotalAmont(12-index, 1) && getTotalAmont(12-index, 1).countNum)||0)}}笔</text>
+										</view>
+									</view>
+								</view>
+							</view>
+							<view class="right_icon2 flex_align_center flex_justify_center">
+								<uni-icons type="right" color="#f86112" size="14"></uni-icons>
+							</view>
+						</view>
+
+
+					</view>
+
+
+				</view>
+			</scroll-view>
+			<!-- 选择年份 -->
+			<uni-popup ref="showYear" background-color="#f8f8f8" type="bottom">
+				<view class="types_wrapper_view">
+					<view class="close_btn">
+						<view class="close_icon">
+							<u-icon name="close" size="20" @click="closeModal('showYear')"></u-icon>
+						</view>
+						<view>
+							请选择年
+						</view>
+					</view>
+					<scroll-view class="types_btns_view" :scroll-into-view="toView" scroll-y="true"
+						scroll-with-animation="true">
+						<popupBtn popupType="selectYear" @btnClickCb='yearChange' :listObj="monthListObj"
+							:activeType="activeMonth" :activeTypeFirst="activeYear">
+						</popupBtn>
+					</scroll-view>
+				</view>
+			</uni-popup>
+		</view>
+	</wrapperPage>
+</template>
+
+<script>
+	import {
+		store
+	} from '@/uni_modules/uni-id-pages/common/store.js'
+	import dayjs from 'dayjs'
+	const db = uniCloud.database()
+	const dbcmd = db.command
+	const formatDe = "YYYY"
+	const xm_consumption_pages = 'xm-consumption-pages'
+	const xm_consumption_flag = "xm-consumption-flag"
+	export default {
+		props: {
+			active_year_month_props: {
+				type: String,
+				default: ''
+			}
+		},
+		data() {
+			return {
+				baseUrl: this.$baseUrl,
+				dataList: [],
+				monthListObj: {},
+				inList: [],
+				outList: [],
+				activeYearMonth: '',
+				activeMonth: '',
+				activeYear: '',
+				imgType: '',
+			}
+		},
+		computed: {
+			hasLogin() {
+				return store.hasLogin
+			},
+			hiddenAmountReportFlag() {
+				return store.hiddenAmountReportFlag
+			},
+			getAmountFormat() {
+				return (num, type) => {
+					if (this.hiddenAmountReportFlag) {
+						return '*****'
+					} else {
+						let formatAmount = this.$options.filters['formatAmount']
+						let changeToThousand = this.$options.filters['changeToThousand']
+						if (type) {
+							return changeToThousand(formatAmount(num), type)
+						} else {
+							return changeToThousand(formatAmount(num))
+						}
+					}
+				}
+			},
+			getAmountNumFormat() {
+				return (num) => {
+					if (this.hiddenAmountReportFlag) {
+						return '***'
+					} else {
+						return num
+					}
+				}
+			},
+			getTotalAmont() {
+				return (m, type) => {
+					let res = {}
+					if (type === 1) {
+						res = this.dataList.find(findItem => {
+							return findItem.consumption_type == '收入' && m === findItem.time.slice(5, 7) * 1
+						})
+					} else {
+						res = this.dataList.find(findItem => {
+							return findItem.consumption_type == '支出' && m === findItem.time.slice(5, 7) * 1
+						})
+					}
+					return res
+				}
+			},
+			getYearTotalAmont() {
+				return (type) => {
+					let res = []
+					if (type === 1) {
+						res = this.dataList.filter(filterItem => {
+							return filterItem.consumption_type == '收入'
+						})
+					} else if (type === 0) {
+						res = this.dataList.filter(filterItem => {
+							return filterItem.consumption_type == '支出'
+						})
+					} else {
+
+					}
+					let total = 0
+					if (res && res.length > 0) {
+						for (let i = 0; i < res.length; i++) {
+							let item = res[i]
+							total += (item.consumption_amount || 0)
+						}
+					}
+					return total
+				}
+			},
+		},
+		watch: {
+			active_year_month_props: {
+				handler(newVal, oldVal) {
+					if (newVal && newVal != oldVal) {
+						this.activeYearMonth = newVal
+					}
+				},
+				immediate: true
+			}
+		},
+		created() {
+			const y = dayjs().format("YYYY")
+			let monthArr = []
+			for (var i = y; i >= 2022; i--) {
+				if (!this.monthListObj['2022']) {
+					monthArr.push({
+						type: i,
+						label: i + '年',
+						value: i
+					})
+				}
+			}
+			this.monthListObj['2022'] = monthArr
+			if (this.active_year_month_props) {
+				this.activeYearMonth = this.active_year_month_props
+			} else {
+				this.activeYearMonth = dayjs().format(formatDe)
+			}
+			if (!this.hasLogin) {
+				this.dataList = []
+				return
+			}
+			// this.initData()
+			this.getImgType()
+		},
+		methods: {
+			getImgType() {
+				db.collection(xm_consumption_flag)
+					.get({
+						getOne: true
+					}).then(res => {
+						this.imgType = res.result.data.imgType
+					})
+
+			},
+			yearFilterShow() {
+				this.activeMonth = this.activeYearMonth.slice(0, 4) + '年'
+				this.activeYear = this.activeYearMonth.slice(0, 4)
+				this.showModal('showYear')
+			},
+			yearChange() {
+
+			},
+			yearChange({
+				item
+			} = obj) {
+				this.activeYearMonth = `${item.type}`
+				this.closeModal('showYear')
+				this.initData()
+			},
+			showModal(typePopup) {
+				this.$refs[typePopup].open()
+			},
+			closeModal(typePopup) {
+				this.$refs[typePopup].close()
+			},
+			initData() {
+				if (!this.hasLogin) {
+					this.dataList = []
+					return
+				}
+				this.getYearData()
+			},
+			getYearData() {
+				if (!this.hasLogin) {
+					return
+				}
+				let str = "user_id==$cloudEnv_uid"
+				str = `${str}&&substr(consumption_date, 0, 4) == ${JSON.stringify(this.activeYearMonth.slice(0, 4))}`
+				uni.showLoading({
+					title: '加载中'
+				})
+				console.log('str', str);
+				db.collection(xm_consumption_pages).where(
+						str)
+					.field(
+						'consumption_label, consumption_type,consumption_amount, consumption_date,consumption_remark,platform,consumption_icon_class'
+					)
+					.groupBy(
+						'consumption_type,substr(consumption_date, 0, 7) as time'
+					).groupField('sum(consumption_amount) as consumption_amount, sum(1) as countNum')
+					.orderBy(
+						'consumption_type desc, time desc')
+					.get({
+						getCount: true
+					}).then(res => {
+						let data = res.result.data
+						this.dataList = data
+						this.inList = data.filter(filterItem => {
+							return filterItem.consumption_type == '收入'
+						})
+						this.outList = data.filter(filterItem => {
+							return filterItem.consumption_type == '支出'
+						})
+					}).finally(() => {
+						uni.hideLoading()
+					})
+			},
+
+			gotoMonthRank(m) {
+				let mm = m < 10 ? '0' + m : m
+				let de = `${this.activeYearMonth.slice(0, 4)}-${mm}`
+				uni.navigateTo({
+					url: `/pages/reports/reportsM?consumption_type=支出&activeYearMonth=${de}`
+				});
+			}
+		}
+	};
+</script>
+
+<style lang="scss" scoped>
+	/* 请根据实际需求修改父元素尺寸，组件自动识别宽高 */
+	.year_container {
+		.img_wrapper {
+			border-radius: 20rpx;
+			overflow: hidden;
+		}
+
+		.img_view {
+			height: 216rpx;
+			width: 100%;
+			background-position: left center;
+			background-size: 100%;
+			background-repeat: no-repeat;
+			box-shadow: rgba(0, 0, 0, 0.08) 0px 0px 1rpx 1rpx;
+			border: 1rpx solid #f8f8f8;
+		}
+
+		.img_view2 {
+			height: 310rpx;
+			width: 100%;
+			background-position: left center;
+			background-size: 100%;
+			background-repeat: no-repeat;
+			box-shadow: rgba(0, 0, 0, 0.08) 0px 0px 1rpx 1rpx;
+			border: 1rpx solid #f8f8f8;
+		}
+
+		.img_wrapper:not(:last-child) {
+			margin-bottom: 20rpx;
+		}
+
+		.img_box {
+			justify-content: center;
+		}
+
+		.img_position_num {
+			transform: rotate(9deg) skew(-15deg, -15deg);
+			font-size: 190rpx;
+			position: absolute;
+			right: 50rpx;
+			bottom: 0rpx;
+			height: 100%;
+			color: #F5F4FA;
+		}
+
+		.img_position_num_0,
+		.img_position_num_1,
+		.img_position_num_2 {
+			right: 50rpx;
+		}
+
+		.img_bg_0,
+		.img_bg_1,
+		.img_bg_2 {
+			background-image: linear-gradient(to right, #F2F2FA, #F6F3FA, #E7EFFC, #CCDCF5);
+		}
+
+		.img_bg_3,
+		.img_bg_4,
+		.img_bg_5 {
+			background-image: linear-gradient(to right, #EEF8DF, #F5F7E9, #F7ECCC, #FAD39C);
+		}
+
+		.img_bg_6,
+		.img_bg_7,
+		.img_bg_8 {
+			background-image: linear-gradient(to right, #E3F5F9, #E6F5FA, #C9F1E8, #A2EAD4);
+		}
+
+		.img_bg_9,
+		.img_bg_10,
+		.img_bg_11 {
+			background-image: linear-gradient(to right, #F7EEE5, #F6F2E9, #F7E7E0, #F5CCCA);
+		}
+
+		.text_view {
+			padding: 30rpx 20rpx 30rpx 30rpx;
+		}
+
+		.t_view {
+			width: 45%;
+			color: #006fcb;
+		}
+
+		.t_view2 {
+			height: 170rpx;
+			color: #006fcb;
+		}
+
+		.right_icon {
+			border: 3.5rpx solid #f86112;
+			width: 50rpx;
+			height: 50rpx;
+			border-radius: 50%;
+		}
+
+		.right_icon2 {
+			border: 3.5rpx solid #f86112;
+			width: 35rpx;
+			height: 35rpx;
+			border-radius: 50%;
+			margin-right: 30rpx;
+		}
+
+		.month_view {
+			font-size: 36rpx;
+			padding-bottom: 20rpx;
+			color: #f86112;
+		}
+	}
+</style>

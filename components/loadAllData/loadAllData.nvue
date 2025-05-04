@@ -1,0 +1,18 @@
+<template>
+	<view class="allDataContent color1">
+		已加载完了
+	</view>
+</template>
+
+<script>
+	export default {
+		
+	}
+</script>
+
+<style lang="scss">
+.allDataContent{
+	padding: 10px 20px 10px;
+	align-items: center;
+}
+</style>

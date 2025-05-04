@@ -1,0 +1,351 @@
+<template>
+	<view class="remark_container">
+		<view>
+			<view class="type_title">
+				<view>
+					<text style="font-size: 36rpx;text-align: center;">
+						备注管理
+					</text>
+					<view class="flex_row">
+						<text class="tip_text">
+							左滑编辑
+						</text>
+						<!-- #ifdef MP-WEIXIN -->
+						<text class="tip_text">
+							，长按拖动可排序
+						</text>
+						<!-- #endif -->
+						<!-- #ifdef MP-ALIPAY -->
+						<text class="tip_text">
+							，微信拖动可排序
+						</text>
+						<!-- #endif -->
+						<text class="tip_text">
+							（最多三十条）
+						</text>
+					</view>
+				</view>
+			</view>
+			<basicDrag v-if="remarksList.length>0" @endDrag="endDrag" @clickItem="optRightSwipe" v-model="remarksList"
+				wrapperMaxHeight="calc(100vh - 346rpx)" width="335" :countNum="countNum" :showNodata="true"
+				itemKey="_id" dragType="remark" itemHeight="50px" :column="1">
+			</basicDrag>
+			<view v-if="remarksList.length===0">
+				<view v-if="countNum === null">
+					<u-skeleton rows='3' :title='false' rowsHeight='30' :loading="true" :animate="true"></u-skeleton>
+				</view>
+				<view style="padding-top: 200rpx;" v-else>
+					<u-empty>
+					</u-empty>
+				</view>
+			</view>
+
+		</view>
+
+		<uni-popup ref="showPopupFlag" background-color="#f8f8f8" type="bottom">
+			<view class="type_wrapper">
+				<view class="close_btn">
+					<view class="close_icon" @click="closeModal('showPopupFlag')">
+						<uni-icons type="closeempty" size="20"></uni-icons>
+					</view>
+					<view>
+						{{editTitle}}
+					</view>
+				</view>
+				<input @confirm="confirmPopup" class="inputWrapper" cursor-spacing="140" placeholder="添加备注"
+					maxlength="20" border="surround" v-model="consumption_remark" />
+				<view class="num_length_tip">{{(consumption_remark && consumption_remark.length)||0}}/20</view>
+				<view class="type_btn">
+					<view style="width: 50%;">
+						<u-button type="primary" text="确定" @click="confirmPopup"></u-button>
+					</view>
+				</view>
+			</view>
+		</uni-popup>
+
+		<view v-show="remarksList.length < limitNum" class="add" style="bottom: 200rpx" @click="addRemarksFun">
+			<u-button :customStyle="{boxShadow: '0 2rpx 8rpx 4rpx rgba(0, 122, 255, .3)',border: 'none'}"
+				color="#007aff" :plain="true" shape="circle" icon="plus" text="添加备注"></u-button>
+		</view>
+	</view>
+</template>
+
+<script>
+	import {
+		store,
+		mutations
+	} from '@/uni_modules/uni-id-pages/common/store'
+	import basicDrag from '@/secpackage/components/basic-drag'
+	import dayjs from 'dayjs'
+	const db = uniCloud.database()
+	const db2 = uniCloud.databaseForJQL()
+	const dbcmd = db.command
+	const xm_consumption_remarks = 'xm-consumption-remarks'
+	export default {
+		components: {
+			basicDrag
+		},
+		data() {
+			return {
+				remarksList: [],
+				rightOptions: [{
+						text: '编辑',
+						style: {
+							backgroundColor: '#007aff'
+						}
+					},
+					{
+						text: '删除',
+						style: {
+							backgroundColor: '#F56C6C'
+						}
+					}
+				],
+				consumption_remark: '',
+				countNum: null,
+				limitNum: 30,
+				editTitle: '添加备注'
+			}
+		},
+		computed: {
+			hasLogin() {
+				return store.hasLogin
+			}
+		},
+		onLoad() {
+			this.getData()
+		},
+		onPullDownRefresh() {
+			this.getData()
+		},
+		methods: {
+			endDrag(ls) {
+				for (let i = 0; i < ls.length; i++) {
+					let items = ls[i]
+					let it = {
+						order: i,
+						last_modify_date: dayjs().valueOf()
+					}
+					if (i === 0) {
+						uni.showLoading({
+							title: '排序中'
+						})
+					}
+					db.collection(xm_consumption_remarks).doc(items._id).update(it).then(res => {
+						if (i === ls.length - 1) {
+							uni.showToast({
+								title: '排序成功'
+							});
+							this.getData(1)
+						}
+					}).catch(err => {
+						if (i === ls.length - 1) {
+							uni.showModal({
+								title: '排序失败',
+								icon: 'error',
+								content: JSON.stringify(err),
+								showCancel: false
+							})
+						}
+					}).finally(() => {
+						if (i === ls.length - 1) {
+							uni.hideLoading()
+						}
+					})
+				}
+			},
+			addRemarksFun() {
+				this.editTitle = "添加备注"
+				this.showModal('showPopupFlag')
+				this.activeItem = {}
+				this.consumption_remark = ''
+			},
+			getData() {
+				if (!this.hasLogin) {
+					return
+				}
+				uni.showLoading({
+					title: '加载中'
+				})
+				db2.collection(xm_consumption_remarks).where({
+						user_id: dbcmd.in([db.getCloudEnv('$cloudEnv_uid')])
+					})
+					.limit(this.limitNum)
+					.orderBy("order asc")
+					.get().then(res => {
+						let ls = res.data
+						let lsNoOrder = ls.filter(item => {
+							return item.order === undefined || item.order === ''
+						})
+						let lsHasOrder = ls.filter(item => {
+							return item.order !== undefined && item.order !== ''
+						})
+						this.remarksList = [...lsHasOrder, ...lsNoOrder]
+						this.countNum = res.data.length
+						mutations.setRemarkListStore(this.remarksList)
+					}).finally(() => {
+						uni.hideLoading()
+						uni.stopPullDownRefresh()
+					})
+			},
+			optRightSwipe(e, item) {
+				if (e.content.text == '删除') {
+					uni.showModal({
+						title: '删除',
+						content: '确定要删除该条数据吗？',
+						success: (res) => {
+							if (res.confirm) {
+								uni.showLoading({
+									title: '删除中'
+								})
+								db.collection(xm_consumption_remarks).doc(item._id).remove().then(() => {
+									this.getData()
+								}).catch(err => {
+									uni.showModal({
+										title: '删除失败',
+										icon: 'error',
+										content: JSON.stringify(err),
+										showCancel: false
+									})
+								}).finally(() => {
+									uni.hideLoading()
+								})
+							} else if (res.cancel) {}
+						}
+					});
+				} else {
+					this.activeItem = item
+					this.consumption_remark = item.label
+					this.editTitle = "编辑备注"
+					this.showModal('showPopupFlag')
+				}
+			},
+			showModal(typePopup) {
+				this.$refs[typePopup].open()
+			},
+			closeModal(typePopup) {
+				this.$refs[typePopup].close()
+			},
+			confirmPopup() {
+				if (!this.consumption_remark) {
+					uni.showModal({
+						title: '提示',
+						icon: 'error',
+						content: '请填写备注',
+						showCancel: false
+					});
+					return
+				}
+				if (this.editTitle == "编辑备注") {
+					let typeData = {
+						label: this.consumption_remark,
+						last_modify_date: dayjs().valueOf()
+					}
+					uni.showLoading({
+						title: '修改中'
+					})
+					db.collection(xm_consumption_remarks).doc(this.activeItem._id).update(typeData).then(res => {
+						this.closeModal('showPopupFlag')
+						uni.showToast({
+							title: '修改成功'
+						});
+						this.consumption_remark = ''
+						this.getData(1)
+					}).catch(err => {
+						uni.showModal({
+							title: '修改失败',
+							icon: 'error',
+							content: JSON.stringify(err),
+							showCancel: false
+						})
+					}).finally(() => {
+						uni.hideLoading()
+					})
+				} else {
+					let remarkData = [{
+						label: this.consumption_remark
+					}]
+					if (this.remarksList.length >= this.limitNum) {
+						uni.showModal({
+							title: '添加失败',
+							icon: 'error',
+							content: '已达到最大限制',
+							showCancel: false
+						});
+						return
+					}
+					uni.showLoading({
+						title: '添加中'
+					})
+					db.collection(xm_consumption_remarks).add(remarkData).then(res => {
+						this.closeModal('showPopupFlag')
+						uni.showToast({
+							title: '添加成功'
+						});
+						this.consumption_remark = ''
+						this.getData()
+					}).catch(err => {
+						uni.showModal({
+							title: '添加失败',
+							icon: 'error',
+							content: JSON.stringify(err),
+							showCancel: false
+						});
+					}).finally(() => {
+						uni.hideLoading()
+					})
+				}
+			}
+		}
+	}
+</script>
+
+
+<style lang="scss">
+	.remark_container {
+		padding: 60rpx 40rpx;
+		background: #fff;
+		min-height: 100vh;
+
+		.type_title {
+			margin-bottom: 40rpx;
+			padding-bottom: 40rpx;
+			border-bottom: 2rpx solid #ccc;
+			position: relative;
+			flex-direction: row;
+			justify-content: center;
+		}
+
+		.type_btn {
+			padding-top: 60rpx;
+			padding-bottom: 60rpx;
+			flex-direction: row;
+			justify-content: space-around;
+		}
+
+		.type_wrapper {
+			padding: 40rpx;
+		}
+
+		.type_tip {
+			padding-bottom: 40rpx;
+			align-items: center;
+			font-size: 40rpx;
+		}
+
+		.uni-list-item__container {
+			padding: 0;
+		}
+
+		.list_item {
+			flex-direction: row;
+			border-bottom: 2rpx solid #ddd;
+			padding: 30rpx 20rpx;
+		}
+
+		.item_box {
+			max-height: calc(100vh - 326rpx);
+			overflow: auto;
+		}
+	}
+</style>

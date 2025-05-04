@@ -1,0 +1,426 @@
+<template>
+	<wrapperPage>
+		<view class="pt15">
+			<view>
+				<uni-list>
+					<uni-list-item>
+						<template v-slot:body>
+							<view class="flex_row flex_align_center flex_justify_between w100">
+								<view class="switchView">
+									<view>记账日报</view>
+									<view class="noteView">
+										订阅后，您将在每日上午接收记账日报
+									</view>
+								</view>
+								<u-switch v-model="switchFlagD" asyncChange @change="(e)=>switchChange(e,1)"></u-switch>
+							</view>
+
+						</template>
+					</uni-list-item>
+					<uni-list-item>
+						<template v-slot:body>
+							<view class="flex_row flex_align_center flex_justify_between w100">
+								<view class="switchView">
+									<view>记账月报</view>
+									<view class="noteView">
+										订阅后，您将在每月1号上午接收记账月报
+									</view>
+								</view>
+								<u-switch v-model="switchFlagM" asyncChange @change="(e)=>switchChange(e,2)"></u-switch>
+							</view>
+						</template>
+					</uni-list-item>
+					<uni-list-item>
+						<template v-slot:body>
+							<view class="flex_row flex_align_center flex_justify_between w100">
+								<view class="switchView">
+									<view>记账年报</view>
+									<view class="noteView">
+										订阅后，您将在每年1月1号上午接收记账年报
+									</view>
+								</view>
+								<u-switch v-model="switchFlagY" asyncChange @change="(e)=>switchChange(e,3)"></u-switch>
+							</view>
+						</template>
+					</uni-list-item>
+				</uni-list>
+			</view>
+		</view>
+	</wrapperPage>
+</template>
+
+<script>
+	import {
+		store,
+		mutations
+	} from '@/uni_modules/uni-id-pages/common/store'
+	import dayjs from 'dayjs'
+	import messageMixin from "@/common/messageMixin"
+	const xm_message_template = "xm-message-template"
+	const xm_message_times = "xm-message-times"
+	const formatDe3 = "YYYY"
+	const db = uniCloud.database()
+	export default {
+		mixins: [messageMixin],
+		data() {
+			return {
+				switchFlagD: false,
+				switchFlagM: false,
+				switchFlagY: false,
+				dayAccept: false,
+				monthAccept: false,
+				yearAccept: false,
+			}
+		},
+		computed: {
+			hasLogin() {
+				return store.hasLogin
+			},
+			userInfo() {
+				return store.userInfo
+			},
+		},
+		mounted() {
+			this.getMessageTimesInit()
+		},
+		methods: {
+			async getMessageTimesInit() {
+				console.log('getMessageTimesInit');
+				await this.getMessageTimes(() => {
+					console.log('this.messageTimesObj-页面', this.messageTimesObj);
+					this.getTemplateFun2()
+				})
+			},
+			getTemplateFun2() {
+				this.getTemplateFun(() => {
+					uni.getSetting({
+						withSubscriptions: true,
+						success: (res) => {
+							console.log('用户已授权日报消息推送', res.subscriptionsSetting)
+							if (res.subscriptionsSetting && res.subscriptionsSetting.mainSwitch) {
+								let itemSettings = res.subscriptionsSetting.itemSettings
+								if (itemSettings) {
+									// #ifdef MP-WEIXIN
+
+									if (itemSettings[this.templateObj.wxDayTemplate] ===
+										'accept') {
+										// 微信日报
+										console.log('微信日报');
+										this.dayAccept = true
+									} else {
+										this.dayAccept = false
+									}
+
+									if (itemSettings[this.templateObj.wxMonthTemplate] ===
+										'accept') {
+										// 微信月报
+										console.log('微信月报');
+										this.monthAccept = true
+									} else {
+										this.monthAccept = false
+									}
+									if (itemSettings[this.templateObj.wxYearTemplate] ===
+										'accept') {
+										// 微信年报
+										console.log('微信年报');
+										this.yearAccept = true
+									} else {
+										this.yearAccept = false
+									}
+									let flagD = false
+									if (this.messageTimesObj._id && !this.messageTimesObj
+										.wxDisabledDay && this.messageTimesObj
+										.wxDisabledDay !== undefined && this.dayAccept) {
+										flagD = true
+									}
+									this.switchFlagD = flagD
+									let flagM = false
+									if (this.messageTimesObj._id && !this.messageTimesObj
+										.wxDisabledMonth && this.messageTimesObj
+										.wxDisabledMonth !== undefined && this.monthAccept) {
+										flagM = true
+									}
+									this.switchFlagM = flagM
+									let flagY = false
+									if (this.messageTimesObj._id && !this.messageTimesObj
+										.wxDisabledYear && this.messageTimesObj
+										.wxDisabledYear !== undefined && this.yearAccept) {
+										flagY = true
+									}
+									this.switchFlagY = flagY
+									// #endif
+
+									// #ifdef MP-ALIPAY
+
+
+									if (itemSettings[this.templateObj.aliDayTemplate] ===
+										'accept') {
+										// 支付宝日报
+										this.dayAccept = true
+									} else {
+										this.dayAccept = false
+									}
+									if (itemSettings[this.templateObj.aliMonthTemplate] ===
+										'accept') {
+										// 支付宝月报
+										this.monthAccept = true
+									} else {
+										this.monthAccept = false
+									}
+									if (itemSettings[this.templateObj.aliYearTemplate] ===
+										'accept') {
+										// 支付宝年报
+										this.yearAccept = true
+									} else {
+										this.yearAccept = false
+									}
+									let flagD = false
+									if (this.messageTimesObj._id && !this.messageTimesObj
+										.aliDisabledDay && this.messageTimesObj
+										.aliDisabledDay !== undefined && this.dayAccept) {
+										flagD = true
+									}
+									this.switchFlagD = flagD
+									let flagM = false
+									if (this.messageTimesObj._id && !this.messageTimesObj
+										.aliDisabledMonth && this.messageTimesObj
+										.aliDisabledMonth !== undefined && this.monthAccept) {
+										flagM = true
+									}
+									this.switchFlagM = flagM
+									let flagY = false
+									if (this.messageTimesObj._id && !this.messageTimesObj
+										.aliDisabledYear && this.messageTimesObj
+										.aliDisabledYear !== undefined && this.yearAccept) {
+										flagY = true
+									}
+									this.switchFlagY = flagY
+									// #endif
+
+
+								}
+							} else {
+								// 用户未授权消息推送
+								console.log('用户未授权消息推送')
+							}
+						}
+					});
+				})
+			},
+			// 消息事件
+			switchChange(e, num) {
+				if (num === 1) {
+					this.switchFlagD = e
+				}
+				if (num === 2) {
+					this.switchFlagM = e
+				}
+				if (num === 3) {
+					this.switchFlagY = e
+				}
+				this.authorizedReport(e, num)
+			},
+			async getOpenIdFun(e, num) {
+				let tem = ''
+				let typeStr = ''
+				if (num === 1) {
+					typeStr = 'day'
+				}
+				if (num === 2) {
+					typeStr = 'month'
+				}
+				if (num === 3) {
+					typeStr = 'year'
+				}
+
+				let params = {}
+
+				// #ifdef MP-WEIXIN
+
+				if (num === 1) {
+					params.wxDisabledDay = !e
+				}
+				if (num === 2) {
+					params.wxDisabledMonth = !e
+				}
+				if (num === 3) {
+					params.wxDisabledYear = !e
+				}
+
+				uni.login({
+					success: async (res) => {
+						if (res.code) {
+							uniCloud.callFunction({
+								name: 'getOpenId',
+								data: {
+									code: res.code,
+									platform: process.env.UNI_PLATFORM,
+									type: typeStr,
+									disabledObj: params
+								}
+							}).then((uidRes) => {
+								if (uidRes && uidRes.result && uidRes.result.uid) {
+									uni.setStorageSync("useUid", uidRes.result.uid)
+								} else {
+									uni.setStorageSync("useUid", '')
+								}
+							})
+						} else {
+							console.log('获取失败！' + res.errMsg)
+						}
+					}
+				})
+				// #endif
+
+
+				// #ifdef MP-ALIPAY
+
+				if (num === 1) {
+					params.aliDisabledDay = !e
+				}
+				if (num === 2) {
+					params.aliDisabledMonth = !e
+				}
+				if (num === 3) {
+					params.aliDisabledYear = !e
+				}
+
+				my.getAuthCode({
+					scopes: 'auth_user',
+					success: res => {
+						const authCode = res.authCode
+						if (authCode) {
+							uniCloud.callFunction({
+								name: 'getOpenId',
+								data: {
+									code: authCode,
+									platform: process.env.UNI_PLATFORM,
+									type: typeStr,
+									disabledObj: params
+								}
+							}).then((uidRes) => {
+								if (uidRes && uidRes.result && uidRes.result.uid) {
+									uni.setStorageSync("useUid", uidRes.result.uid)
+								} else {
+									uni.setStorageSync("useUid", '')
+								}
+							})
+						}
+					},
+					fail: err => {
+						console.log('my.getAuthCode 调用失败', err)
+					}
+				})
+				// #endif
+			},
+			async authorizedReport(e, num) {
+				await this.getOpenIdFun(e, num)
+				let params = {},
+					paramsExtra = {}
+				// #ifdef MP-WEIXIN
+				if (this.messageTimesObj && this.messageTimesObj.wxDayTimes >=
+					this.timesDay) {} else {
+					params.wxDayTimes = (this.messageTimesObj.wxDayTimes ||
+						0) + 1
+				}
+				if (this.messageTimesObj && this.messageTimesObj.wxMonthTimes >=
+					this.timesMonth) {} else {
+					params.wxMonthTimes = (this.messageTimesObj.wxMonthTimes ||
+						0) + 1
+				}
+				if (this.messageTimesObj && this.messageTimesObj.wxYearTimes >=
+					this.timesYear) {} else {
+					params.wxYearTimes = (this.messageTimesObj.wxYearTimes ||
+						0) + 1
+				}
+				if (num === 1) {
+					paramsExtra.wxDisabledDay = !e
+					// 关闭消息
+					if (paramsExtra.wxDisabledDay) {
+						this.onlyChangeStatues(paramsExtra, () => {
+							this.getMessageTimesInit()
+						})
+						return
+					}
+				}
+				if (num === 2) {
+					paramsExtra.wxDisabledMonth = !e
+					// 关闭消息
+					if (paramsExtra.wxDisabledMonth) {
+						this.onlyChangeStatues(paramsExtra, () => {
+							this.getMessageTimesInit()
+						})
+						return
+					}
+				}
+				if (num === 3) {
+					paramsExtra.wxDisabledYear = !e
+					// 关闭消息
+					if (paramsExtra.wxDisabledYear) {
+						this.onlyChangeStatues(paramsExtra, () => {
+							this.getMessageTimesInit()
+						})
+						return
+					}
+				}
+				// #endif
+
+				// #ifdef MP-ALIPAY
+				if (this.messageTimesObj && this.messageTimesObj.aliDayTimes >=
+					this.timesDay) {} else {
+					params.aliDayTimes = (this.messageTimesObj.aliDayTimes ||
+						0) + 1
+				}
+				if (this.messageTimesObj && this.messageTimesObj.aliMonthTimes >=
+					this.timesMonth) {} else {
+					params.aliMonthTimes = (this.messageTimesObj.aliMonthTimes ||
+						0) + 1
+				}
+				if (this.messageTimesObj && this.messageTimesObj.aliYearTimes >=
+					this.timesYear) {} else {
+					params.aliYearTimes = (this.messageTimesObj.aliYearTimes ||
+						0) + 1
+				}
+				if (num === 1) {
+					paramsExtra.aliDisabledDay = !e
+					// 关闭消息
+					if (paramsExtra.aliDisabledDay) {
+						this.onlyChangeStatues(paramsExtra, () => {
+							this.getMessageTimesInit()
+						})
+						return
+					}
+				}
+				if (num === 2) {
+					paramsExtra.aliDisabledMonth = !e
+					// 关闭消息
+					if (paramsExtra.aliDisabledMonth) {
+						this.onlyChangeStatues(paramsExtra, () => {
+							this.getMessageTimesInit()
+						})
+						return
+					}
+				}
+				if (num === 3) {
+					paramsExtra.aliDisabledYear = !e
+					// 关闭消息
+					if (paramsExtra.aliDisabledYear) {
+						this.onlyChangeStatues(paramsExtra, () => {
+							this.getMessageTimesInit()
+						})
+						return
+					}
+				}
+				// #endif
+				console.log(params, paramsExtra);
+				this.requestSubscribeMessageFun(num, params, paramsExtra, () => {
+					this.getMessageTimesInit()
+				})
+			}
+		}
+	}
+</script>
+
+<style>
+
+</style>

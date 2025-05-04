@@ -1,0 +1,968 @@
+<template>
+	<view class="addAndEdit_container">
+		<view class="addAndEdit">
+			<view class="add_type_container flex_align_center flex_justify_between">
+				<view class="flex_row flex_align_center">
+					<view class="add_type" v-for="(item,key, index) in typeListObj" :key="index">
+						<u-tag size="mini" :text="key" :plain="key != consumption_type" :name="key"
+							@click="radioClick(key)">
+						</u-tag>
+					</view>
+				</view>
+
+				<view>
+					<uni-datetime-picker type="date" v-model="consumption_date">
+						<u-button type="primary" :plain="true" size="mini">
+							<view class="flex_row flex_align_center">
+								<text class="date_filter">
+									{{consumption_date|formatData('YYYY-MM-DD')}}
+								</text>
+								<u-icon name="arrow-down-fill" color="#007aff" size="12"></u-icon>
+							</view>
+						</u-button>
+					</uni-datetime-picker>
+				</view>
+			</view>
+			<view class="input_num">
+				<text>￥{{consumption_amount|changeToThousand(1)}}</text>
+				<text class="cursor_line"></text>
+			</view>
+			<view>
+				<view class="type_item_content">
+					<view class="rowWrap">
+						<view class="colWrap" v-for="(item, idx) in typeFilterList" :key="idx">
+							<u-button :plain="true" @click="typeClick(item, idx)"
+								:customStyle="{...customStyleTypes,color: item.label == activeType? '#007aff':'',backgroundColor: item.label == activeType? '#dedede':''}">
+								<view class="img_item_btn">
+									<text class="iconfont" style="font-size: 40rpx;"
+										:style="[comColor(item.icon_color,'color')]" :class="item.icon_class"></text>
+									<!-- <image class="img_item" src="../../static/svgs/shopping.svg"></image> -->
+									<text style="padding-top: 6rpx;" :style="[comColor(item.icon_color,'color')]">
+										{{item.label}}
+									</text>
+								</view>
+							</u-button>
+						</view>
+						<view class="colWrap">
+							<u-button :plain="true" @click="typeSetting" :customStyle="{...customStyleTypes}">
+								<view class="img_item_btn">
+									<u-icon name="setting" color="#2b85e4" size="20"></u-icon>
+									<text style="color: #2b85e4;padding-top: 6rpx;">
+										分类管理>
+									</text>
+								</view>
+							</u-button>
+						</view>
+					</view>
+				</view>
+
+				<view class="remark_box flex_row flex_align_center flex_justify_between">
+					<view style="flex: 1;" class="btn_remark">
+						<view class="remark_add" @click="addRemarkFun">
+							<text style="margin-right: 10rpx;"
+								:style="{fontSize: consumption_remark&&consumption_remark.length>10?'24rpx': '28rpx'}">
+								{{consumption_remark}}
+							</text>
+							<u-icon v-if="consumption_remark && consumption_remark.length>0" name="edit-pen"
+								color="#2979ff" size="20"></u-icon>
+							<text v-else>
+								添加备注
+							</text>
+						</view>
+					</view>
+					<view>
+						<u-button type="primary" @click="selectRemark" :plain="true" size="mini">
+							<view class="flex_row flex_align_center">
+								<text class="date_filter">
+									常用备注
+								</text>
+								<u-icon name="arrow-down-fill" color="#007aff" size="12"></u-icon>
+							</view>
+						</u-button>
+					</view>
+				</view>
+			</view>
+		</view>
+
+		<!-- 键盘 -->
+		<view class="keyboard_container">
+			<view class="flex_row">
+				<view class="keyboard_item">
+					<u-button :plain="true" :customStyle="customStyleObj" @click="clickNumFun('1')">
+						<text class="btn_text">1</text>
+					</u-button>
+				</view>
+				<view class="keyboard_item">
+					<u-button :plain="true" :customStyle="customStyleObj" @click="clickNumFun('2')">
+						<text class="btn_text">2</text>
+					</u-button>
+				</view>
+				<view class="keyboard_item">
+					<u-button :plain="true" :customStyle="customStyleObj" @click="clickNumFun('3')">
+						<text class="btn_text">3</text>
+					</u-button>
+				</view>
+				<view class="keyboard_item">
+					<u-button :plain="true" :customStyle="customStyleObj" @click="clickNumFun('back')">
+						<u-icon name="backspace" size="24"></u-icon>
+					</u-button>
+				</view>
+			</view>
+
+			<view class="flex_row">
+				<view class="keyboard_item">
+					<u-button :plain="true" :customStyle="customStyleObj" @click="clickNumFun('4')">
+						<text class="btn_text">4</text>
+					</u-button>
+				</view>
+				<view class="keyboard_item">
+					<u-button :plain="true" :customStyle="customStyleObj" @click="clickNumFun('5')">
+						<text class="btn_text">5</text>
+					</u-button>
+				</view>
+				<view class="keyboard_item">
+					<u-button :plain="true" :customStyle="customStyleObj" @click="clickNumFun('6')">
+						<text class="btn_text">6</text>
+					</u-button>
+				</view>
+				<view class="keyboard_item">
+					<u-button :plain="true" :customStyle="customStyleObj" text="重置" @click="clickNumFun('clear')">
+					</u-button>
+				</view>
+			</view>
+
+			<view class="flex_row">
+				<view class="keyboard_item">
+					<view>
+						<u-button :plain="true" :customStyle="customStyleObj" @click="clickNumFun('7')">
+							<text class="btn_text">7</text>
+						</u-button>
+					</view>
+					<view class="line_bg">
+					</view>
+					<view>
+						<u-button :plain="true" :customStyle="customStyleObj" @click="clickNumFun('0')">
+							<text class="btn_text">0</text>
+						</u-button>
+					</view>
+				</view>
+				<view class="keyboard_item">
+					<view>
+						<u-button :plain="true" :customStyle="customStyleObj" @click="clickNumFun('8')">
+							<text class="btn_text">8</text>
+						</u-button>
+					</view>
+					<view class="line_bg">
+					</view>
+					<view>
+						<u-button :plain="true" :customStyle="customStyleObj" @click="clickNumFun('.')">
+							<text class="btn_text">.</text>
+						</u-button>
+					</view>
+				</view>
+				<view class="keyboard_item">
+					<view>
+						<u-button :plain="true" :customStyle="customStyleObj" @click="clickNumFun('9')">
+							<text class="btn_text">9</text>
+						</u-button>
+					</view>
+					<view class="line_bg">
+					</view>
+					<view>
+						<u-button :plain="true" :customStyle="{...customStyleObj, color: '#007aff'}" text="再记一笔"
+							@click="clickNumFun('confirm', 'next')">
+						</u-button>
+					</view>
+				</view>
+				<view class="keyboard_item">
+					<view class="keyboard_ok">
+						<u-button type="primary" :customStyle="{...customStyleObj, height: '100%', color: '#fff'}"
+							text="确定" @click="clickNumFun('confirm', 'back')">
+						</u-button>
+					</view>
+				</view>
+			</view>
+		</view>
+
+		<uni-popup ref="showPopupFlag" background-color="#f8f8f8" type="bottom">
+			<view class="remark_wrapper">
+				<view class="close_btn">
+					<view class="close_icon">
+						<u-icon name="close" size="20" @click="closeModal('showPopupFlag')"></u-icon>
+					</view>
+					<view>
+						添加备注
+					</view>
+					<view class="right_btn" @click="gotoRemarks">
+						备注管理>
+					</view>
+				</view>
+				<input @confirm="confirmPopupRemark" class="inputWrapper" cursor-spacing="170" type="text"
+					placeholder="请输入内容" maxlength="20" border="surround" v-model="consumption_remark_input" />
+				<view class="num_length_tip">{{(consumption_remark_input && consumption_remark_input.length)||0}}/20
+				</view>
+				<view class="remark_old_btn">
+					<view class="old_btn" :key="index" v-for="(item,index) in remarkHistoryList">
+						<u-button :customStyle="{fontSize: item.length>10?'16rpx': '24rpx'}" v-if="index < 3"
+							type="primary" @click="remarkOldClick(item)" :plain="true" size="mini" shape="circle"
+							:text="item"></u-button>
+					</view>
+				</view>
+				<view class="remark_btn">
+					<view style="width: 50%;">
+						<u-button type="primary" text="确定" @click="confirmPopupRemark"></u-button>
+					</view>
+				</view>
+			</view>
+		</uni-popup>
+		<uni-popup ref="showRemarkFlag" background-color="#f8f8f8" type="bottom">
+			<view class="types_wrapper_view">
+				<view class="close_btn">
+					<view class="close_icon">
+						<u-icon name="close" size="20" @click="closeModal('showRemarkFlag')"></u-icon>
+					</view>
+					<view>
+						请选择备注
+					</view>
+					<view class="right_btn" @click="gotoRemarks">
+						备注管理>
+					</view>
+				</view>
+				<view class="types_btns_box">
+					<view v-if="remarksList && remarksList.length > 0" class="types_btns_wrapper">
+						<view class="types_btns" :key="index" v-for="(item, index) in remarksList">
+							<u-button @click="remarkChange(item.label)" size="large" :text="item.label"></u-button>
+						</view>
+					</view>
+					<view v-else>
+						<view v-if="countNum === null">
+							<u-skeleton rows='3' :title='false' rowsHeight='30' :loading="true"
+								:animate="true"></u-skeleton>
+						</view>
+						<view style="padding-top: 200rpx;" v-else>
+							<u-empty>
+							</u-empty>
+						</view>
+					</view>
+					<loadAllData v-if="isAll && remarksList && remarksList.length > 0"></loadAllData>
+				</view>
+			</view>
+		</uni-popup>
+	</view>
+</template>
+
+<script>
+	const db = uniCloud.database()
+	const dbcmd = db.command
+	const db2 = uniCloud.databaseForJQL()
+	import dayjs from 'dayjs'
+	import {
+		store,
+		mutations
+	} from '@/uni_modules/uni-id-pages/common/store'
+	import messageMixin from "@/common/messageMixin"
+	const xm_consumption_pages = 'xm-consumption-pages'
+	const xm_consumption_types = 'xm-consumption-types'
+	const xm_consumption_remarks = 'xm-consumption-remarks'
+	const formatDe = "YYYY-MM-DD"
+	const formatDe2 = "YYYY-MM-DD HH:mm:ss"
+	let currentTime = ''
+	let editObj = {}
+	export default {
+		mixins: [messageMixin],
+		data() {
+			return {
+				minDate: dayjs().add(-3, 'month').format(formatDe),
+				activeType: '',
+				consumption_remark_input: '',
+				consumption_remark: '',
+				consumption_date: '',
+				showCalendar: false,
+				consumption_amount: '',
+				customStyleTypes: {
+					border: 'none',
+					color: '#000000',
+					height: '120rpx',
+					fontSize: '24rpx',
+					padding: 0
+				},
+				customStyleObj: {
+					border: 'none',
+					color: '#000000',
+					height: '80rpx',
+					fontSize: '36rpx',
+					fontWeight: 'bold'
+				},
+				consumption_type: '',
+				typeFilterList: [],
+				typeListObj: {},
+				remarkHistoryList: [],
+				remarksList: [],
+				countNum: null,
+				limitNum: 50,
+				showRemarkFlag: false,
+				itemType: ''
+			}
+		},
+		created() {
+			// this.consumption_date = dayjs().format(formatDe)
+			// currentTime = dayjs().format(formatDe)
+			// this.getTypes();
+			this.getTemplateFun()
+			this.getRemarkData()
+		},
+		onShow() {
+			if (this.hasLogin) {
+				this.remarkHis = 'remark_history' + this.userInfo._id
+				const dt = uni.getStorageSync(this.remarkHis)
+				if (dt) {
+					this.remarkHistoryList = dt
+				}
+			} else {
+				mutations.setTypeListStore([])
+				mutations.setRemarkListStore([])
+			}
+			if (this.remarkListStore && this.remarkListStore.length > 0) {
+				this.remarksList = this.remarkListStore
+				this.countNum = this.remarkListStore.length
+			}
+			if (this.typeListStore && this.typeListStore.length > 0) {
+				let typeData = this.typeListStore
+				this.initTypesData(typeData)
+			}
+
+		},
+		computed: {
+			comColor() {
+				return (valObj, key) => {
+					if (valObj) {
+						let c = `rgba(${valObj.r},${valObj.g},${valObj.b},${valObj.a})`
+						return {
+							[key]: c
+						}
+					} else {
+						return {}
+					}
+				}
+			},
+			typeListStore() {
+				return store.typeListStore
+			},
+			remarkListStore() {
+				return store.remarkListStore
+			},
+			hasLogin() {
+				return store.hasLogin
+			},
+			userInfo() {
+				return store.userInfo
+			},
+			isAll() {
+				return this.countNum !== null && this.remarksList.length >= this.countNum
+			},
+		},
+		async onLoad(option) {
+			this.consumption_date = dayjs().format(formatDe)
+			currentTime = dayjs().format(formatDe)
+			let typeLists = {}
+			let typeData = []
+			typeLists = await this.getTypes()
+			typeData = typeLists.data
+			mutations.setTypeListStore(typeData)
+			await this.initTypesData(typeData)
+			if (option.itemType) {
+				this.itemType = option.itemType
+			}
+			if (option.items) {
+				// 编辑回显
+				this.$nextTick(() => {
+					let obj = JSON.parse(option.items)
+					editObj = obj
+					this.consumption_amount = this.$options.filters['formatAmount'](obj.consumption_amount)
+					this.consumption_type = obj.consumption_type
+					this.consumption_remark = obj.consumption_remark
+					this.consumption_remark_input = obj.consumption_remark
+					this.consumption_date = obj.consumption_date.slice(0, 10)
+					this.activeType = obj.consumption_label
+					console.log(this.activeType, obj.consumption_label, this.typeListObj);
+					if (this.activeType === "") {
+						this.activeType = this.getTypeLabel0()
+					}
+					this.initActiveItem()
+				})
+			} else {
+				editObj = {}
+				this.consumption_type = '支出'
+				this.activeType = this.getTypeLabel0()
+				this.consumption_amount = ''
+				this.consumption_remark = ''
+				this.consumption_remark_input = ''
+				this.initActiveItem()
+			}
+		},
+		watch: {
+			consumption_type: {
+				handler(newVal, oldVal) {
+					if (newVal !== oldVal) {
+						let ls = this.typeListObj[newVal] || []
+						let lsNoOrder = ls.filter(item => {
+							return item.order === undefined || item.order === ''
+						})
+						let lsHasOrder = ls.filter(item => {
+							return item.order !== undefined && item.order !== ''
+						})
+						this.typeFilterList = [...lsHasOrder, ...lsNoOrder]
+					}
+				},
+				immediate: true
+			},
+			typeListObj: {
+				handler(newVal, oldVal) {
+					if (newVal !== oldVal) {
+						let ls = newVal[this.consumption_type] || []
+						let lsNoOrder = ls.filter(item => {
+							return item.order === undefined || item.order === ''
+						})
+						let lsHasOrder = ls.filter(item => {
+							return item.order !== undefined && item.order !== ''
+						})
+						this.typeFilterList = [...lsHasOrder, ...lsNoOrder]
+					}
+				},
+				deep: true
+			}
+		},
+		methods: {
+			// 获取label
+			getTypeLabel0() {
+				let typeData = (this.typeListObj && this.typeListObj[this.consumption_type]) || []
+				console.log(111, this.typeListObj[this.consumption_type]);
+				let lab = ''
+				let hasOrder = typeData.find(item => {
+					return item.order === 0 || item.order >= 0
+				})
+				if (hasOrder && hasOrder.label) {
+					// 有排序，返回label
+					lab = hasOrder.label
+				} else {
+					// 无排序，返回label,第一条
+					lab = typeData && typeData[0].label
+				}
+				return lab
+			},
+			// 处理type格式
+			initTypesData(typeData) {
+				let typeObj = {
+					"支出": [],
+					"收入": [],
+					"不计": []
+				}
+				// 存在order的数据
+				let typeObj1 = {
+					"支出": [],
+					"收入": [],
+					"不计": []
+				}
+				// 不存在order的数据
+				let typeObj2 = {
+					"支出": [],
+					"收入": [],
+					"不计": []
+				}
+				typeData.forEach(item => {
+					if (item.order === undefined || item.order === '') {
+						if (!typeObj2[item.type]) {
+							typeObj2[item.type] = []
+						}
+						typeObj2[item.type].push(item)
+					} else {
+						if (!typeObj1[item.type]) {
+							typeObj1[item.type] = []
+						}
+						typeObj1[item.type].push(item)
+					}
+				})
+				typeObj["支出"] = [...typeObj2["支出"], ...typeObj1["支出"]]
+				typeObj["收入"] = [...typeObj2["收入"], ...typeObj1["收入"]]
+				typeObj["不计"] = [...typeObj2["不计"], ...typeObj1["不计"]]
+				this.typeListObj = typeObj
+			},
+			selectRemark() {
+				this.showModal('showRemarkFlag')
+			},
+			getRemarkData() {
+				if (!this.hasLogin) {
+					return
+				}
+				db2.collection(xm_consumption_remarks).where({
+					user_id: db.getCloudEnv('$cloudEnv_uid')
+				}).limit(this.limitNum).orderBy("order asc").get().then(res => {
+					let ls = res.data
+					let lsNoOrder = ls.filter(item => {
+						return item.order === undefined || item.order === ''
+					})
+					let lsHasOrder = ls.filter(item => {
+						return item.order !== undefined && item.order !== ''
+					})
+					this.remarksList = [...lsHasOrder, ...lsNoOrder]
+					this.countNum = res.data.length
+					mutations.setRemarkListStore(this.remarksList)
+				}).finally(() => {})
+			},
+			remarkChange(val) {
+				this.consumption_remark = val
+				this.closeModal('showRemarkFlag')
+			},
+			typeSetting() {
+				uni.navigateTo({
+					url: '/secpackage/bookkeeping/config/typeConfig/typeConfig'
+				})
+			},
+			gotoRemarks() {
+				// this.closeModal('showRemarkFlag')
+				uni.navigateTo({
+					url: '/secpackage/bookkeeping/config/remarkConfig/remarkConfig'
+				})
+			},
+			remarkOldClick(val) {
+				this.consumption_remark = val
+				this.closeModal('showPopupFlag')
+			},
+			addRemarkFun() {
+				this.showModal('showPopupFlag')
+				this.consumption_remark_input = this.consumption_remark
+			},
+			confirmPopupRemark() {
+				this.consumption_remark = this.consumption_remark_input
+				this.closeModal('showPopupFlag')
+				const dt = uni.getStorageSync(this.remarkHis)
+				if (dt) {
+					if (dt.indexOf(this.consumption_remark_input) === -1) {
+						dt.unshift(this.consumption_remark_input)
+					}
+					let resDt = dt.slice(0, 3)
+					uni.setStorageSync(this.remarkHis, resDt)
+					this.remarkHistoryList = resDt
+				} else {
+					uni.setStorageSync(this.remarkHis, [this.consumption_remark_input])
+					this.remarkHistoryList = [this.consumption_remark_input]
+				}
+			},
+			typeClick(item, idx) {
+				this.activeType = item.label
+				this.activeItem = item
+			},
+			initActiveItem() {
+				try {
+					this.activeItem = this.typeListObj[this.consumption_type].find(item => item.label === this.activeType)
+				} catch (e) {
+					//TODO handle the exception
+				}
+			},
+			async getTypes() {
+				let res = await db2.collection(xm_consumption_types).where({
+					user_id: db.getCloudEnv('$cloudEnv_uid')
+				}).orderBy('order asc').limit(100).get()
+				return res
+			},
+			confirmCalendar(e) {
+				this.consumption_date = e[0]
+				this.closeModal('showCalendar')
+			},
+			showModal(typePopup) {
+				this.$refs[typePopup].open()
+			},
+			closeModal(typePopup) {
+				this.$refs[typePopup].close()
+			},
+			radioClick(name) {
+				this.consumption_type = name
+				this.activeType = this.getTypeLabel0()
+				this.initActiveItem()
+			},
+			initValueFun(value) {
+				this.consumption_amount = value.replace(/^\D*([0-9]\d*\.?\d{0,2})?.*$/, '$1')
+			},
+
+			initMessageSetting() {
+				uni.getSetting({
+					withSubscriptions: true,
+					success: (res) => {
+						console.log('用户已授权日报消息推送add', res.subscriptionsSetting)
+						if (res.subscriptionsSetting && res.subscriptionsSetting.mainSwitch) {
+							let itemSettings = res.subscriptionsSetting.itemSettings
+							if (itemSettings) {
+								this.getMessageTimes(() => {
+									let useUid = uni.getStorageSync("useUid")
+									if (!useUid) {
+										return
+									}
+									let params = {}
+									// #ifdef MP-WEIXIN
+
+									if (itemSettings[this.templateObj.wxDayTemplate] === 'accept') {
+										if (this.messageTimesObj && this.messageTimesObj.wxDayTimes >=
+											this.timesDay) {} else {
+											params.wxDayTimes = (this.messageTimesObj.wxDayTimes ||
+												0) + 1
+										}
+									}
+									if (itemSettings[this.templateObj.wxDayTemplate] === 'accept') {
+										// 小程序订阅消息模板id
+										this.requestSubscribeMessageFun(1, params)
+									}
+
+									// #endif
+
+									// #ifdef MP-ALIPAY
+									if (itemSettings[this.templateObj.aliDayTemplate] === 'accept') {
+										if (this.messageTimesObj && this.messageTimesObj.aliDayTimes >=
+											this.timesDay) {} else {
+											params.aliDayTimes = (this.messageTimesObj.aliDayTimes ||
+												0) + 1
+										}
+									}
+
+
+									if (itemSettings[this.templateObj.aliDayTemplate] === 'accept') {
+										// 小程序订阅消息模板id
+										this.requestSubscribeMessageFun(1, params)
+									}
+									// #endif
+								})
+
+							}
+						} else {
+							// 用户未授权消息推送
+							console.log('用户未授权消息推送')
+						}
+					},
+					fail(err) {
+						console.log('获取用户设置失败', err);
+					}
+				})
+			},
+			clickNumFun(value, type) {
+				let resStr = ''
+				let str = this.consumption_amount + ''
+				if (value === 'back') {
+					resStr = this.consumption_amount.slice(0, this.consumption_amount.length - 1)
+				} else if (value === 'clear') {
+					resStr = ''
+				} else if (value === 'confirm') {
+					let de = ''
+					const date1 = dayjs(this.consumption_date);
+					const date2 = dayjs(currentTime);
+					if (date1.isBefore(date2)) {
+						de = this.consumption_date + ' 23:59:59'
+					} else if (date1.isAfter(date2)) {
+						de = this.consumption_date + ' 00:00:01'
+					} else {
+						de = dayjs().format(formatDe2)
+					}
+					let params = {
+						consumption_type: this.consumption_type,
+						consumption_label: this.activeItem.label,
+						consumption_icon_class: this.activeItem.icon_class,
+						consumption_icon_color: this.activeItem.icon_color,
+						consumption_date: de,
+						consumption_date_value: dayjs(de).valueOf(),
+						consumption_amount: Number((this.consumption_amount * 100).toFixed(1)),
+						consumption_remark: this.consumption_remark,
+						platform: process.env.UNI_PLATFORM,
+						last_modify_date: dayjs().valueOf()
+					}
+					if (editObj._id) {
+						// 修改
+						uni.showLoading({
+							title: '修改中'
+						})
+						delete params.platform
+						let editDe = ''
+						const editDate1 = dayjs(this.consumption_date);
+						const editDate2 = dayjs(currentTime);
+						const editDate3 = dayjs(dayjs(editObj.consumption_date).format(formatDe))
+						// 修改日期和添加日期一样
+						if (editDate1.isSame(editDate3)) {
+							delete params.consumption_date
+							delete params.consumption_date_value
+						} else {
+							// 修改日期在当前日期之后
+							if (editDate1.isAfter(editDate2)) {
+								editDe = this.consumption_date + ' 00:00:01'
+								params.consumption_date = editDe
+								params.consumption_date_value = dayjs(editDe).valueOf()
+							} else if (editDate1.isBefore(editDate2)) {
+								// 修改日期在当前日期之前
+								editDe = this.consumption_date + ' 23:59:59'
+								params.consumption_date = editDe
+								params.consumption_date_value = dayjs(editDe).valueOf()
+							} else {
+								// 修改日期在当前日期相等
+								editDe = dayjs().format(formatDe2)
+								params.consumption_date = editDe
+								params.consumption_date_value = dayjs(editDe).valueOf()
+							}
+						}
+
+						db.collection(xm_consumption_pages).doc(editObj._id).update(params).then(res => {
+							uni.showToast({
+								title: '修改成功'
+							})
+							this.initMessageSetting()
+							this.consumption_remark = ''
+							this.consumption_remark_input = ''
+							this.consumption_amount = ''
+							if (editObj._id && editObj.consumption_date.slice(0, 10) === this.consumption_date
+								.slice(0, 10)) {
+								if (this.itemType) {
+									uni.$emit(this.itemType)
+								} else {
+									uni.$emit('updatePageList', {
+										type: 'update',
+										editTime: this.consumption_date.slice(0, 10),
+										data: {
+											consumption_amount_old: editObj.consumption_amount,
+											consumption_type_old: editObj.consumption_type,
+											...editObj,
+											...params
+										}
+									})
+								}
+								editObj = {}
+							} else {
+								if (this.itemType) {
+									uni.$emit(this.itemType)
+								} else {
+									uni.$emit('updatePageList', {
+										type: 'add'
+									})
+								}
+							}
+							if (type == 'next') {} else {
+								uni.navigateBack()
+							}
+						}).catch(err => {
+							uni.showModal({
+								title: '修改失败',
+								icon: 'error',
+								content: JSON.stringify(err),
+								showCancel: false
+							})
+						}).finally(() => {
+							uni.hideLoading()
+						})
+					} else {
+						// 添加
+						uni.showLoading({
+							title: '添加中'
+						})
+						db.collection(xm_consumption_pages).add(params).then(res => {
+							uni.showToast({
+								title: '添加成功'
+							})
+							this.initMessageSetting()
+							this.consumption_remark = ''
+							this.consumption_remark_input = ''
+							this.consumption_amount = ''
+							if (this.itemType) {
+								uni.$emit(this.itemType)
+							} else {
+								uni.$emit('updatePageList', {
+									type: 'add'
+								})
+							}
+							if (type == 'next') {} else {
+								uni.navigateBack()
+							}
+						}).catch(err => {
+							uni.showModal({
+								title: '添加失败',
+								icon: 'error',
+								content: JSON.stringify(err),
+								showCancel: false
+							})
+						}).finally(() => {
+							uni.hideLoading()
+						})
+					}
+				} else {
+					resStr = this.consumption_amount + value
+				}
+				this.consumption_amount = resStr.replace(/^\D*([0-9]\d*\.?\d{0,2})?.*$/, '$1')
+			}
+		}
+	}
+</script>
+
+<style lang="scss">
+	.addAndEdit_container {
+		.addAndEdit {
+			background: #fff;
+			padding: 40rpx;
+		}
+
+		.add_type_container {
+			flex-direction: row;
+			// padding-left: 60rpx;
+		}
+
+		.add_type:not(:last-child) {
+			margin-right: 20rpx;
+		}
+
+		.input_num {
+			padding-top: 40rpx;
+			font-size: 56rpx;
+			flex-direction: row;
+			border-bottom: 2rpx solid #999;
+			padding-bottom: 6rpx;
+		}
+
+		.cursor_line {
+			width: 4rpx;
+			background: #000000;
+			animation: lineAnimation 1s infinite;
+		}
+
+		.img_item_btn {
+			align-items: center;
+		}
+
+		.img_item {
+			height: 68rpx;
+			width: 68rpx;
+			border-radius: 50%;
+			margin-bottom: 6rpx;
+		}
+
+		.btn_text {
+			font-size: 36rpx;
+		}
+
+		.date_filter {
+			margin-right: 10rpx;
+		}
+
+		.keyboard_container {
+			background: #f8f8f8;
+			padding: 40rpx 40rpx 60rpx;
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			right: 0;
+		}
+
+		.keyboard_item {
+			width: 23%;
+			margin: 1vw;
+			background: #fff;
+		}
+
+		.line_bg {
+			height: 2vw;
+			background: #f8f8f8;
+		}
+
+		.keyboard_bottom {
+			flex-direction: row;
+		}
+
+		.keyboard_ok {
+			height: calc(100%);
+		}
+
+		@keyframes lineAnimation {
+			0% {
+				background: #000000;
+			}
+
+			100% {
+				background: #fff;
+			}
+
+		}
+
+		.btn_remark {
+			color: #007aff;
+		}
+
+		.remark_wrapper {
+			padding: 40rpx;
+		}
+
+		.remark_title {
+			padding-bottom: 40rpx;
+			align-items: center;
+			font-size: 40rpx;
+		}
+
+		.remark_btn {
+			padding-top: 60rpx;
+			padding-bottom: 60rpx;
+			flex-direction: row;
+			justify-content: space-around;
+		}
+
+		.remark_old_btn {
+			flex-direction: row;
+			flex-wrap: wrap;
+		}
+
+		.old_btn:not(:last-child) {
+			margin-right: 20rpx;
+		}
+
+		.old_btn {
+			margin-bottom: 10rpx;
+			margin-top: 10rpx;
+			max-width: 30%;
+		}
+
+		.remark_add {
+			flex-direction: row;
+			align-items: center;
+		}
+
+		.types_wrapper_view {
+			height: 70vh;
+			overflow: auto;
+			padding: 40rpx;
+		}
+
+		.types_btns_box {
+			max-height: calc(100% - 140rpx);
+			overflow: auto;
+			padding-bottom: 20rpx;
+		}
+
+		.types_btns {
+			width: 100%;
+			margin: 0 0 20rpx;
+		}
+
+		.type_item_content {
+			max-height: calc(100vh - 780rpx);
+			overflow: auto;
+		}
+
+		.remark_box {
+			padding: 20rpx 0;
+		}
+
+		.rowWrap {
+			margin: 20rpx 0;
+			flex-wrap: wrap;
+			flex-direction: row;
+		}
+
+		.colWrap {
+			margin: 0 0 20rpx 0;
+			flex-wrap: wrap;
+			width: 16.66667%;
+			align-items: center;
+			justify-content: center;
+			align-content: center;
+		}
+	}
+</style>

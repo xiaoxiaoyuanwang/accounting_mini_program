@@ -10,6 +10,8 @@
 ## 扫码体验
 
 - 一套代码编到多个平台，这不是梦想。眼见为实，扫描以下二维码，亲自体验最全面的跨平台效果！
+- 微信、支付宝搜索“小明记账簿” 快速体验小程序；
+- 复制链接到手机浏览器下载`APK` 快速体验APP（https://env-00jxgf6z60g2-static.normal.cloudstatic.cn/apk/xiaoming_bookkeeping_2.7.1.apk）。
   
   <div style="display:flex;">
     <div style="margin-right:10px;">
@@ -132,3 +134,4 @@
     <div><img style="border-radius: 5px;" src="https://env-00jxgf6z60g2.normal.cloudstatic.cn/qr_code/wxh.jpg" width="160" height="160" /></div>
     <b>微信号</b>
   </div>
+

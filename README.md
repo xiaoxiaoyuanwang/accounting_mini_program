@@ -54,6 +54,8 @@
 - 在月统计中，前十排行榜中的记录，点击、左滑可以编辑。
 
   <img src='https://i-blog.csdnimg.cn/direct/8a89d30dca3342b09303b52dee39f14d.jpeg' style="border-radius: 5px;" width="210" height="443" />
+  <img src='https://i-blog.csdnimg.cn/direct/fb85d4aa394c4a0ea25d8182a043b5c3.jpeg' width="210" height="443" />
+  <img src='https://i-blog.csdnimg.cn/direct/e93587604b5a41048de219b355967655.jpeg' width="210" height="443" />
   <img src='https://i-blog.csdnimg.cn/direct/96049ece78a149f0b2461fc6946f5f6d.jpeg' style="border-radius: 5px;" width="210" height="443" />
   <img src='https://i-blog.csdnimg.cn/direct/76e4b6c41de94fb1bec9424e42981b33.jpeg' style="border-radius: 5px;" width="210" height="443" />
   <img src='https://i-blog.csdnimg.cn/blog_migrate/dcfab06042448fb85beaf5a34a01311f.jpeg' style="border-radius: 5px;" width="210" height="443" />

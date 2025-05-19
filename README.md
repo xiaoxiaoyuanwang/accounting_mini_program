@@ -11,19 +11,19 @@
 
 - 一套代码编到多个平台，这不是梦想。眼见为实，扫描以下二维码，亲自体验最全面的跨平台效果！
 - 微信、支付宝搜索 `小明记账簿` 快速体验小程序；
-- 复制链接到手机浏览器下载`APK` 快速体验APP（https://env-00jxgf6z60g2-static.normal.cloudstatic.cn/apk/xiaoming_bookkeeping_2.7.6.apk）。
-  
+- 复制链接到手机浏览器下载`APK` 快速体验APP（https://env-00jxgf6z60g2-static.normal.cloudstatic.cn/apk/xiaoming_bookkeeping_2.7.8.apk）。
+
   <div style="display:flex;">
     <div style="margin-right:10px;">
-      <div style="display: inline-block;background: rgb(255, 255, 255);font-size:0;border-radius: 5px;"><img style="border-radius: 5px;width:160px;height:160px" src="https://env-00jxgf6z60g2.normal.cloudstatic.cn/qr_code/wx.png"/></div>
+      <div style="display: inline-block;background: rgb(255, 255, 255);font-size:0;border-radius: 5px;"><img style="border-radius: 5px;width:160px;height:160px" src="https://i-blog.csdnimg.cn/blog_migrate/1c64059b8da275115258b3cfd23c87f8.jpeg"/></div>
       <br />
-      <b>微信小程序版</b>
+      <b>微信小程序</b>
       <br />
     </div>
     <div style="margin-right:10px;">
-      <div style="display: inline-block;background: rgb(255, 255, 255);font-size:0;border-radius: 5px;"><img style="border-radius: 5px;width:160px;height:160px" src="https://env-00jxgf6z60g2.normal.cloudstatic.cn/qr_code/al.jpg"/></div>
+      <div style="display: inline-block;background: rgb(255, 255, 255);font-size:0;border-radius: 5px;"><img style="border-radius: 5px;width:160px;height:160px" src="https://i-blog.csdnimg.cn/blog_migrate/2cd62a5e704e8a5cb6c173cc60a38631.jpeg"/></div>
       <br />
-      <b>支付宝小程序版</b>
+      <b>支付宝小程序</b>
       <br />
     </div>
   </div>
